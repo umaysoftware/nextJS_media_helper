@@ -8,11 +8,12 @@ A comprehensive media file processing library for Next.js applications. Features
 - 🎨 **Multi-format Support**: Images, Videos, Audio, Documents, Archives
 - 🔍 **Automatic Type Detection**: Smart file type detection based on MIME types and extensions
 - 📏 **Validation Rules**: File size limits, type restrictions, count constraints
-- 🗜️ **Compression**: Automatic compression for images and videos
+- 🗜️ **Compression**: Automatic compression for images, videos (WebM via MediaRecorder), and audio
 - 🖼️ **WebP Thumbnails**: Unified WebP thumbnail generation for all file types
 - 🔄 **Format Conversion**: Convert between different formats (where supported)
-- 📦 **Flexible Output**: Base64, Blob, or File objects
-- ⚡ **Browser-based Processing**: Uses FFmpeg.wasm for video/audio processing
+- 📦 **Flexible Output**: Base64, Blob, File objects, and Object URLs
+- ⚡ **Browser-based Processing**: Uses MediaRecorder API for video, FFmpeg.wasm for audio
+- 📊 **Progress Tracking**: Real-time progress callbacks for all operations
 
 ## Installation
 
@@ -90,11 +91,50 @@ processedFiles.forEach(file => {
     console.log('Base64 available');
   }
   
+  if (file.processed.url) {
+    console.log('Object URL available:', file.processed.url);
+    // Remember to revoke URLs when done: URL.revokeObjectURL(file.processed.url)
+  }
+  
   if (file.thumbnail) {
     console.log('WebP thumbnail generated');
     // All thumbnails are in WebP format
+    if (file.thumbnail.url) {
+      console.log('Thumbnail URL:', file.thumbnail.url);
+    }
   }
 });
+```
+
+### Progress Tracking
+
+```typescript
+import MediaHelper, { RuleType } from 'nextjs-media-helper';
+
+const files = await MediaHelper.pickMixed({
+  multiple: true,
+  rules: [{
+    type: RuleType.VIDEO,
+    compressQuality: 80
+  }],
+  onProgress: (progress) => {
+    console.log(`Processing ${progress.fileName}`);
+    console.log(`File ${progress.currentFile} of ${progress.totalFiles}`);
+    console.log(`Stage: ${progress.stage}`);
+    console.log(`Progress: ${progress.percentage}%`);
+    
+    // Update UI
+    updateProgressBar(progress.percentage);
+    updateStatusText(`${progress.stage}: ${progress.fileName}`);
+  }
+});
+
+// Progress stages:
+// - 'validating': File validation
+// - 'compressing': Compression (if enabled)
+// - 'generating-thumbnail': Thumbnail generation
+// - 'processing': General processing
+// - 'completed': File processing completed
 ```
 
 ### Type-Specific File Selection
@@ -136,9 +176,12 @@ import MediaHelper, { ProcessedFile, RuleType } from 'nextjs-media-helper';
 const MediaUploader: React.FC = () => {
   const [files, setFiles] = useState<ProcessedFile[]>([]);
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState<number>(0);
+  const [currentFile, setCurrentFile] = useState<string>('');
 
   const handleFileSelect = async () => {
     setLoading(true);
+    setProgress(0);
     try {
       const processed = await MediaHelper.pickMixed({
         multiple: true,
@@ -153,7 +196,11 @@ const MediaUploader: React.FC = () => {
             compressQuality: 70,
             willGenerateBlob: true
           }
-        ]
+        ],
+        onProgress: (progressInfo) => {
+          setProgress(progressInfo.percentage);
+          setCurrentFile(`${progressInfo.stage}: ${progressInfo.fileName}`);
+        }
       });
       
       setFiles(processed);
@@ -161,6 +208,7 @@ const MediaUploader: React.FC = () => {
       console.error('Processing failed:', error);
     } finally {
       setLoading(false);
+      setProgress(100);
     }
   };
 
@@ -169,6 +217,13 @@ const MediaUploader: React.FC = () => {
       <button onClick={handleFileSelect} disabled={loading}>
         {loading ? 'Processing...' : 'Select Files'}
       </button>
+      
+      {loading && (
+        <div className="progress">
+          <div className="progress-bar" style={{ width: `${progress}%` }} />
+          <span>{currentFile}</span>
+        </div>
+      )}
       
       <div className="file-grid">
         {files.map((file, index) => (
@@ -252,6 +307,7 @@ Opens native file picker and processes selected files of any type.
   - `multiple`: Boolean - Allow multiple file selection (default: true)
   - `accept`: String - Custom accept attribute for file input
   - `rules`: Array of RuleInfo objects for validation and processing
+  - `onProgress`: Progress callback function (optional)
 
 **Returns:** `Promise<ProcessedFile[]>`
 
@@ -294,6 +350,25 @@ enum RuleType {
 }
 ```
 
+#### ProgressInfo Interface
+```typescript
+interface ProgressInfo {
+  currentFile: number;    // Current file index (1-based)
+  totalFiles: number;     // Total number of files
+  fileName: string;       // Name of the file being processed
+  stage: 'validating' | 'compressing' | 'generating-thumbnail' | 'processing' | 'completed';
+  percentage: number;     // Overall progress percentage (0-100)
+}
+```
+
+#### SelectionOptions Interface
+```typescript
+interface SelectionOptions {
+  rules?: RuleInfo[];
+  onProgress?: (progress: ProgressInfo) => void;
+}
+```
+
 #### RuleInfo Interface
 ```typescript
 interface RuleInfo {
@@ -322,11 +397,13 @@ interface ProcessedFile {
     base64?: string;
     blob?: Blob;
     file?: File;
+    url?: string;  // Object URL (remember to revoke when done)
   };
   thumbnail?: {
     base64?: string;
     blob?: Blob;
     file?: File;
+    url?: string;  // Object URL (remember to revoke when done)
   };
 }
 ```
@@ -338,6 +415,7 @@ interface ProcessedFile {
 
 ### Videos
 - MP4, WebM, AVI, MKV, MOV, FLV, WMV, OGG, MPEG, TS, M4V
+- **Note**: Video compression outputs WebM format using MediaRecorder API
 
 ### Audio
 - MP3, WAV, OGG, FLAC, AAC, M4A, WMA, AMR, AIFF, OPUS
@@ -414,8 +492,11 @@ const files = await MediaHelper.pickMixed({
 ## Performance Considerations
 
 - Large video files may take time to process
-- Video/audio processing uses FFmpeg.wasm (loaded on-demand)
+- Video compression uses MediaRecorder API (WebM output)
+- Audio processing uses FFmpeg.wasm (loaded on-demand)
 - Image compression uses browser-image-compression library
+- Progress callbacks help track long-running operations
+- Object URLs should be revoked after use to prevent memory leaks
 - Consider using Web Workers for heavy processing tasks
 
 ## Error Handling
@@ -437,12 +518,40 @@ try {
 }
 ```
 
+## URL Management
+
+Remember to clean up Object URLs when you're done using them:
+
+```typescript
+const files = await MediaHelper.pickMixed();
+
+// Use the URLs
+files.forEach(file => {
+  if (file.processed.url) {
+    // Use the URL (e.g., as img src)
+    console.log(file.processed.url);
+  }
+});
+
+// Clean up when done
+files.forEach(file => {
+  if (file.processed.url) {
+    URL.revokeObjectURL(file.processed.url);
+  }
+  if (file.thumbnail?.url) {
+    URL.revokeObjectURL(file.thumbnail.url);
+  }
+});
+```
+
 ## Notes
 
 - All thumbnails are generated in WebP format for consistency and performance
+- Video compression outputs WebM format using MediaRecorder API
 - Document format conversion requires server-side processing
 - Archive extraction not implemented (use JSZip or similar)
 - Cancel file selection returns empty array, not an error
+- Object URLs are created for processed files and thumbnails - remember to revoke them
 
 ## License
 
