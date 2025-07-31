@@ -55,6 +55,7 @@
     "@ffmpeg/ffmpeg": "^0.12.15",
     "@ffmpeg/util": "^0.12.2",
     "browser-image-compression": "^2.0.2",
+    "compressorjs": "^1.2.1",
     "file-type": "^18.7.0",
     "image-size": "^1.0.2",
     "react-dropzone": "^14.3.8",
