@@ -110,12 +110,15 @@ const generateThumbnail = async (file: File, options: PreviewImageOptions): Prom
                         type: `image/${targetFormat}`
                     }));
 
+                    const thumbnailFile = new File([blob], `thumbnail.${targetFormat}`, {
+                        type: `image/${targetFormat}`
+                    });
+                    
                     resolve({
                         base64,
                         blob,
-                        file: new File([blob], `thumbnail.${targetFormat}`, {
-                            type: `image/${targetFormat}`
-                        })
+                        file: thumbnailFile,
+                        url: URL.createObjectURL(blob)
                     });
                 },
                 `image/${targetFormat}`,
@@ -272,6 +275,11 @@ const processImageFile = async (files: File[], options?: SelectionOptions): Prom
         }
 
         processedMainFile.file = processedImage;
+        
+        // URL oluştur
+        if (processedMainFile.blob || processedMainFile.file) {
+            processedMainFile.url = URL.createObjectURL(processedMainFile.blob || processedMainFile.file);
+        }
 
         const defaultThumbnailOptions: PreviewImageOptions = {
             width: 200,

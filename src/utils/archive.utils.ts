@@ -111,7 +111,8 @@ const generateArchiveThumbnail = async (file: File): Promise<ThumbnailFile> => {
                 resolve({
                     base64,
                     blob,
-                    file: thumbnailFile
+                    file: thumbnailFile,
+                    url: URL.createObjectURL(blob)
                 });
             },
             'image/webp',
@@ -180,9 +181,14 @@ const processArchiveFiles = async (files: File[], options?: SelectionOptions): P
         }
 
         processedMainFile.file = processedArchive;
+        
+        // URL oluştur
+        if (processedMainFile.blob || processedMainFile.file) {
+            processedMainFile.url = URL.createObjectURL(processedMainFile.blob || processedMainFile.file);
+        }
 
         // Always generate a thumbnail for archives
-        // thumbnailFile = await generateArchiveThumbnail(file);
+        thumbnailFile = await generateArchiveThumbnail(file);
 
         const extension = '.' + file.name.split('.').pop()!.toLowerCase();
 

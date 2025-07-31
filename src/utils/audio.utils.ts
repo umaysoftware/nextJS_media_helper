@@ -198,7 +198,8 @@ export const generateAudioVisualThumbnail = async (file: File): Promise<Thumbnai
                 resolve({
                     base64,
                     blob,
-                    file: thumbnailFile
+                    file: thumbnailFile,
+                    url: URL.createObjectURL(blob)
                 });
             },
             'image/webp',
@@ -326,9 +327,14 @@ const processAudioFiles = async (files: File[], options?: SelectionOptions): Pro
         }
 
         processedMainFile.file = processedAudio;
+        
+        // URL oluştur
+        if (processedMainFile.blob || processedMainFile.file) {
+            processedMainFile.url = URL.createObjectURL(processedMainFile.blob || processedMainFile.file);
+        }
 
         // Generate visual thumbnail for audio files
-        // thumbnailFile = await generateAudioVisualThumbnail(file);
+        thumbnailFile = await generateAudioVisualThumbnail(file);
 
         const extension = '.' + file.name.split('.').pop()!.toLowerCase();
 

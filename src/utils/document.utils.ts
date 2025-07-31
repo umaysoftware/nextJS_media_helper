@@ -107,7 +107,8 @@ const generateDocumentThumbnail = async (file: File): Promise<ThumbnailFile> => 
                 resolve({
                     base64,
                     blob,
-                    file: thumbnailFile
+                    file: thumbnailFile,
+                    url: URL.createObjectURL(blob)
                 });
             },
             'image/webp',
@@ -179,9 +180,14 @@ const processDocumentFiles = async (files: File[], options?: SelectionOptions): 
         }
 
         processedMainFile.file = processedDocument;
+        
+        // URL oluştur
+        if (processedMainFile.blob || processedMainFile.file) {
+            processedMainFile.url = URL.createObjectURL(processedMainFile.blob || processedMainFile.file);
+        }
 
         // Always generate a thumbnail for documents
-        // thumbnailFile = await generateDocumentThumbnail(file);
+        thumbnailFile = await generateDocumentThumbnail(file);
 
         const extension = '.' + file.name.split('.').pop()!.toLowerCase();
 

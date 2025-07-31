@@ -29,13 +29,15 @@ export interface FileSelection {
 export interface ThumbnailFile {
     base64?: string; // Base64 formatında string (opsiyonel)
     blob?: Blob;     // Blob objesi (opsiyonel)
-    file?: File; // İşlenmiş dosya (opsiyonel, örneğin sıkıştırılmış) 
+    file?: File; // İşlenmiş dosya (opsiyonel, örneğin sıkıştırılmış)
+    url?: string; // Blob veya File'dan oluşturulan URL (opsiyonel)
 }
 
 export interface ProcessedMainFile {
     base64?: string; // Base64 formatında string (opsiyonel)
     blob?: Blob;     // Blob objesi (opsiyonel)
     file?: File; // İşlenmiş dosya (opsiyonel, örneğin sıkıştırılmış)
+    url?: string; // Blob veya File'dan oluşturulan URL (opsiyonel)
 }
 
 export interface ProcessedFile {
