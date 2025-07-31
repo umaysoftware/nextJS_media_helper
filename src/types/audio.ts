@@ -17,5 +17,5 @@ export interface PreviewAudioOptions {
     duration: number; // Süre (saniye cinsinden)
 
     compressQuality?: number; // Sıkıştırma kalitesi (0-100 arası, varsayılan 75)
-    format?: 'wav' | 'mp3' | 'ogg'; // Thumbnail formatı (varsayılan wav)
+    format?: 'wav' | 'mp3' | 'ogg' | 'opus'; // Dönüştürme formatı (varsayılan 'mp3')
 }

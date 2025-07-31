@@ -1,3 +1,12 @@
+enum RuleType {
+    IMAGE = "image",       // Resim dosyaları için kural
+    VIDEO = "video",       // Video dosyaları için kural
+    AUDIO = "audio",       // Ses dosyaları için kural
+    DOCUMENT = "document", // Belge dosyaları için kural
+    ARCHIVE = "archive",   // Arşiv dosyaları için kural
+    GENERIC = "generic"    // Genel dosya türleri için kural
+}
+
 /**
  * Seçilen medya dosyasının temel bilgilerini içeren interface
  * Bu interface, dosya seçildikten sonra ilk validasyon için kullanılır
@@ -9,11 +18,6 @@ export interface FileSelection {
     extension: string; // Dosya uzantısı (örn: ".jpg", ".mp4")
     mimeType: string;  // MIME tipi (örn: "image/jpeg", "video/mp4")
 }
-
-
-
-
-
 
 
 
@@ -60,6 +64,7 @@ export interface ProcessedFile {
 
 // *** RULE TYPES *** //
 export interface RuleInfo {
+    type: RuleType; // Kural tipi (image, video, audio, document, archive, generic)
     allowedMimeTypes?: string[];  // İzin verilen MIME tipleri
     minSelectionCount?: number;   // Minimum seçilmesi gereken dosya sayısı
     maxSelectionCount?: number;   // Maximum seçilebilecek dosya sayısı
@@ -72,5 +77,6 @@ export interface RuleInfo {
 }
 
 export interface SelectionOptions {
-    rules?: RuleInfo | RuleInfo[]; // Tek bir kural veya kural dizisi
+    rules?: RuleInfo[]; // Tek bir kural veya kural dizisi
 }
+

@@ -27,6 +27,6 @@ const covertVideoFormat = async (file: File, format: VideoMimeTypes): Promise<Fi
 
 
 
-const processVideoFile = async (file: File, options: SelectionOptions): Promise<ProcessedFile> => {
+const processVideoFile = async (files: File[], options: SelectionOptions): Promise<ProcessedFile[]> => {
 
 }

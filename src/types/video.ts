@@ -18,6 +18,5 @@ export interface PreviewVideoOptions {
     duration: number; // Süre (saniye cinsinden)
 
     compressQuality?: number; // Sıkıştırma kalitesi (0-100 arası, varsayılan 75)
-    format?: 'jpeg' | 'png' | 'webp'; // Thumbnail formatı (varsayılan jpeg)
-
+    format?: 'jpeg' | 'png' | 'webp'; // Thumbnail formatı (varsayılan webp)
 }
