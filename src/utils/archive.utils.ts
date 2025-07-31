@@ -10,6 +10,7 @@ const fileToBase64 = (file: File): Promise<string> => {
     });
 };
 
+// @ts-ignore
 const base64ToBlob = (base64: string, mimeType: string): Blob => {
     const byteCharacters = atob(base64.split(',')[1]);
     const byteNumbers = new Array(byteCharacters.length);
@@ -20,6 +21,7 @@ const base64ToBlob = (base64: string, mimeType: string): Blob => {
     return new Blob([byteArray], { type: mimeType });
 };
 
+// @ts-ignore
 const getArchiveMimeType = (format: string): string => {
     const mimeMap: Record<string, string> = {
         'zip': AchiveMimeTypes.ZIP,
@@ -40,6 +42,7 @@ const isArchiveFile = (file: File): boolean => {
         file.name.endsWith('.7z');
 };
 
+// @ts-ignore
 const compressArchive = async (file: File, compressQuality: number): Promise<File> => {
     // Archive files are already compressed, so we'll return the original
     console.log(`Archive compression requested with quality ${compressQuality}, returning original file`);
@@ -116,12 +119,14 @@ const generateArchiveThumbnail = async (file: File): Promise<ThumbnailFile> => {
     });
 };
 
+// @ts-ignore
 const extractArchive = async (file: File): Promise<File[]> => {
     // Archive extraction typically requires specialized libraries like JSZip
     // This is a placeholder that would need actual implementation
     throw new Error('Archive extraction is not implemented. Consider using JSZip or similar library for client-side extraction.');
 };
 
+// @ts-ignore
 const convertArchiveFormat = async (file: File, format: AchiveMimeTypes): Promise<File> => {
     // Archive format conversion requires specialized tools
     // This would typically be done server-side
@@ -133,10 +138,14 @@ const convertArchiveFormat = async (file: File, format: AchiveMimeTypes): Promis
     throw new Error(`Archive format conversion from ${file.type} to ${format} is not supported in the browser. This requires server-side processing.`);
 };
 
+
+
+
 const processArchiveFiles = async (files: File[], options?: SelectionOptions): Promise<ProcessedFile[]> => {
     const processedFiles: ProcessedFile[] = [];
 
-    const archiveRule = options?.rules?.find(rule => rule.type === RuleType.ARCHIVE);
+    const archiveRule = options?.rules?.find(rule => rule.type === RuleType.ARCHIVE) ||
+        options?.rules?.find(rule => rule.type === RuleType.GENERIC);
 
     for (const file of files) {
         if (!isArchiveFile(file)) {

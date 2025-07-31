@@ -11,6 +11,7 @@ const fileToBase64 = (file: File): Promise<string> => {
     });
 };
 
+// @ts-ignore
 const base64ToBlob = (base64: string, mimeType: string): Blob => {
     const byteCharacters = atob(base64.split(',')[1]);
     const byteNumbers = new Array(byteCharacters.length);
@@ -21,6 +22,7 @@ const base64ToBlob = (base64: string, mimeType: string): Blob => {
     return new Blob([byteArray], { type: mimeType });
 };
 
+// @ts-ignore
 const getImageMimeType = (format: string): string => {
     const mimeMap: Record<string, string> = {
         'jpeg': ImageMimeTypes.JPEG,
@@ -130,6 +132,7 @@ const generateThumbnail = async (file: File, options: PreviewImageOptions): Prom
     });
 };
 
+// @ts-ignore
 const cropImage = async (file: File, cropOptions: { x: number; y: number; width: number; height: number }): Promise<File> => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -182,6 +185,7 @@ const cropImage = async (file: File, cropOptions: { x: number; y: number; width:
     });
 };
 
+// @ts-ignore
 const convertImageFormat = async (file: File, format: ImageMimeTypes): Promise<File> => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');

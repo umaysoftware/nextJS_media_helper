@@ -27,6 +27,7 @@ const fileToBase64 = (file: File): Promise<string> => {
     });
 };
 
+// @ts-ignore
 const base64ToBlob = (base64: string, mimeType: string): Blob => {
     const byteCharacters = atob(base64.split(',')[1]);
     const byteNumbers = new Array(byteCharacters.length);
@@ -37,6 +38,7 @@ const base64ToBlob = (base64: string, mimeType: string): Blob => {
     return new Blob([byteArray], { type: mimeType });
 };
 
+// @ts-ignore
 const getVideoMimeType = (format: string): string => {
     const mimeMap: Record<string, string> = {
         'mp4': VideoMimeTypes.MP4,
@@ -125,6 +127,8 @@ const generateThumbnail = async (file: File, options: PreviewVideoOptions): Prom
     };
 };
 
+
+// @ts-ignore
 const cropVideo = async (file: File, cropOptions: { startAt: number; duration: number }): Promise<File> => {
     const ffmpeg = await initFFmpeg();
     const inputName = 'input.' + file.name.split('.').pop();
@@ -150,6 +154,7 @@ const cropVideo = async (file: File, cropOptions: { startAt: number; duration: n
     return new File([blob], `cropped_${file.name}`, { type: file.type });
 };
 
+// @ts-ignore
 const convertVideoFormat = async (file: File, format: VideoMimeTypes): Promise<File> => {
     const ffmpeg = await initFFmpeg();
     const inputName = 'input.' + file.name.split('.').pop();

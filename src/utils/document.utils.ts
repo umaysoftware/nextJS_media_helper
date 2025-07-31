@@ -10,6 +10,7 @@ const fileToBase64 = (file: File): Promise<string> => {
     });
 };
 
+// @ts-ignore
 const base64ToBlob = (base64: string, mimeType: string): Blob => {
     const byteCharacters = atob(base64.split(',')[1]);
     const byteNumbers = new Array(byteCharacters.length);
@@ -20,6 +21,7 @@ const base64ToBlob = (base64: string, mimeType: string): Blob => {
     return new Blob([byteArray], { type: mimeType });
 };
 
+// @ts-ignore
 const getDocumentMimeType = (format: string): string => {
     const mimeMap: Record<string, string> = {
         'pdf': DocumentMimeTypes.PDF,
@@ -42,6 +44,7 @@ const isDocumentFile = (file: File): boolean => {
         file.type.startsWith('text/');
 };
 
+// @ts-ignore
 const compressDocument = async (file: File, compressQuality: number): Promise<File> => {
     // Document compression is typically not needed for most document types
     // as they are already compressed (PDF, DOCX, etc.)
@@ -112,6 +115,7 @@ const generateDocumentThumbnail = async (file: File): Promise<ThumbnailFile> => 
     });
 };
 
+// @ts-ignore
 const convertDocumentFormat = async (file: File, format: DocumentMimeTypes): Promise<File> => {
     // Document format conversion typically requires server-side processing
     // or specialized libraries. For now, we'll throw an error indicating

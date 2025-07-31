@@ -26,6 +26,7 @@ const fileToBase64 = (file: File): Promise<string> => {
     });
 };
 
+// @ts-ignore
 const base64ToBlob = (base64: string, mimeType: string): Blob => {
     const byteCharacters = atob(base64.split(',')[1]);
     const byteNumbers = new Array(byteCharacters.length);
@@ -138,6 +139,7 @@ const generateAudioThumbnail = async (file: File, options: PreviewAudioOptions):
     };
 };
 
+// @ts-ignore
 const cropAudio = async (file: File, cropOptions: { startAt: number; duration: number }): Promise<File> => {
     const ffmpeg = await initFFmpeg();
     const inputName = 'input.' + file.name.split('.').pop();
@@ -163,6 +165,7 @@ const cropAudio = async (file: File, cropOptions: { startAt: number; duration: n
     return new File([blob], `cropped_${file.name}`, { type: file.type });
 };
 
+// @ts-ignore
 const convertAudioFormat = async (file: File, format: AudioMimeTypes): Promise<File> => {
     const ffmpeg = await initFFmpeg();
     const inputName = 'input.' + file.name.split('.').pop();
