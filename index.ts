@@ -16,6 +16,62 @@ import { AchiveMimeTypes } from './src/types/archive';
  */
 export class MediaHelper {
     /**
+     * Pre-validate files before processing
+     */
+    private static validateFiles(files: File[], options?: SelectionOptions): void {
+        if (!files || files.length === 0) {
+            return;
+        }
+
+        // Check GENERIC rule constraints first
+        const genericRule = options?.rules?.find(rule => rule.type === RuleType.GENERIC);
+        if (genericRule) {
+            if (genericRule.minSelectionCount && files.length < genericRule.minSelectionCount) {
+                throw new Error(`Minimum ${genericRule.minSelectionCount} file(s) required`);
+            }
+            if (genericRule.maxSelectionCount && files.length > genericRule.maxSelectionCount) {
+                throw new Error(`Maximum ${genericRule.maxSelectionCount} file(s) allowed`);
+            }
+        }
+
+        // Group files by type for type-specific validation
+        const fileGroups = MediaHelper.groupFilesByType(files);
+
+        // Validate each group
+        for (const [fileType, groupFiles] of fileGroups) {
+            const typeRule = options?.rules?.find(rule => rule.type === fileType) || genericRule;
+            
+            if (!typeRule) continue;
+
+            // Check count constraints for this type
+            if (typeRule.type !== RuleType.GENERIC) {
+                if (typeRule.minSelectionCount && groupFiles.length < typeRule.minSelectionCount) {
+                    throw new Error(`Minimum ${typeRule.minSelectionCount} ${fileType} file(s) required`);
+                }
+                if (typeRule.maxSelectionCount && groupFiles.length > typeRule.maxSelectionCount) {
+                    throw new Error(`Maximum ${typeRule.maxSelectionCount} ${fileType} file(s) allowed`);
+                }
+            }
+
+            // Validate each file
+            for (const file of groupFiles) {
+                // Check MIME type
+                if (typeRule.allowedMimeTypes && !typeRule.allowedMimeTypes.includes(file.type)) {
+                    throw new Error(`File type ${file.type} is not allowed for ${file.name}`);
+                }
+
+                // Check file size
+                if (typeRule.minFileSize && file.size < typeRule.minFileSize) {
+                    throw new Error(`File ${file.name} is too small. Minimum size: ${typeRule.minFileSize} bytes`);
+                }
+                if (typeRule.maxFileSize && file.size > typeRule.maxFileSize) {
+                    throw new Error(`File ${file.name} is too large. Maximum size: ${typeRule.maxFileSize} bytes`);
+                }
+            }
+        }
+    }
+
+    /**
      * Detects the file type based on MIME type and file extension
      */
     private static detectFileType(file: File): RuleType {
@@ -81,6 +137,9 @@ export class MediaHelper {
             throw new Error('No files provided');
         }
 
+        // Validate all files first before processing
+        MediaHelper.validateFiles(files, options);
+
         const allProcessedFiles: ProcessedFile[] = [];
         const fileGroups = MediaHelper.groupFilesByType(files);
 
@@ -121,17 +180,7 @@ export class MediaHelper {
             }
         }
 
-        // Check total file count constraints if GENERIC rule exists
-        const genericRule = options?.rules?.find(rule => rule.type === RuleType.GENERIC);
-        if (genericRule) {
-            if (genericRule.minSelectionCount && allProcessedFiles.length < genericRule.minSelectionCount) {
-                throw new Error(`Minimum ${genericRule.minSelectionCount} file(s) required in total`);
-            }
-
-            if (genericRule.maxSelectionCount && allProcessedFiles.length > genericRule.maxSelectionCount) {
-                throw new Error(`Maximum ${genericRule.maxSelectionCount} file(s) allowed in total`);
-            }
-        }
+        // No need to check constraints again, already validated in validateFiles
 
         return allProcessedFiles;
     }
