@@ -1,0 +1,25 @@
+{
+  "mcpServers": {
+    "memory": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-knowledge-graph",
+        "--memory-path",
+        "/Users/kaanacar/Desktop/UMAYSOFT-CORES/nextJS_media_helper/memory.jsonl"
+      ],
+      "autoapprove": [
+        "create_entities",
+        "create_relations",
+        "add_observations",
+        "delete_entities",
+        "delete_observations",
+        "delete_relations",
+        "read_graph",
+        "search_nodes",
+        "open_nodes"
+      ]
+    } 
+      
+  }
+}
