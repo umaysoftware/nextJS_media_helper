@@ -1,4 +1,4 @@
-enum RuleType {
+export enum RuleType {
     IMAGE = "image",       // Resim dosyaları için kural
     VIDEO = "video",       // Video dosyaları için kural
     AUDIO = "audio",       // Ses dosyaları için kural
