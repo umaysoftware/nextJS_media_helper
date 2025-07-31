@@ -1,6 +1,6 @@
 import imageCompression from 'browser-image-compression';
-import { ImageMimeTypes, PreviewImageOptions } from '@/types/image';
-import { ThumbnailFile, SelectionOptions, ProcessedFile, ProcessedMainFile, RuleType } from '@/types/common';
+import { ImageMimeTypes, PreviewImageOptions } from '../types/image';
+import { ThumbnailFile, SelectionOptions, ProcessedFile, ProcessedMainFile, RuleType } from '../types/common';
 
 const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {

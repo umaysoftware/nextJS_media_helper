@@ -1,5 +1,5 @@
-import { AchiveMimeTypes } from '@/types/archive';
-import { ThumbnailFile, ProcessedFile, SelectionOptions, ProcessedMainFile, RuleType } from '@/types/common';
+import { AchiveMimeTypes } from '../types/archive';
+import { ThumbnailFile, ProcessedFile, SelectionOptions, ProcessedMainFile, RuleType } from '../types/common';
 
 const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {

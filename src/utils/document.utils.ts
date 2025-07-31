@@ -1,5 +1,5 @@
-import { DocumentMimeTypes } from '@/types/document';
-import { ThumbnailFile, ProcessedFile, SelectionOptions, ProcessedMainFile, RuleType } from '@/types/common';
+import { DocumentMimeTypes } from '../types/document';
+import { ThumbnailFile, ProcessedFile, SelectionOptions, ProcessedMainFile, RuleType } from '../types/common';
 
 const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {

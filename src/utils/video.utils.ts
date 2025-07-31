@@ -1,8 +1,8 @@
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile, toBlobURL } from '@ffmpeg/util';
-import { ProcessedFile, ProcessedMainFile, RuleType } from '@/types/common';
-import { VideoMimeTypes, PreviewVideoOptions } from '@/types/video';
-import { ThumbnailFile, SelectionOptions } from '@/types/common';
+import { ProcessedFile, ProcessedMainFile, RuleType } from '../types/common';
+import { VideoMimeTypes, PreviewVideoOptions } from '../types/video';
+import { ThumbnailFile, SelectionOptions } from '../types/common';
 
 let ffmpeg: FFmpeg | null = null;
 

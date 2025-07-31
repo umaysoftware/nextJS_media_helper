@@ -1,7 +1,7 @@
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile, toBlobURL } from '@ffmpeg/util';
-import { AudioMimeTypes, PreviewAudioOptions } from '@/types/audio';
-import { ThumbnailFile, ProcessedFile, SelectionOptions, ProcessedMainFile, RuleType } from '@/types/common';
+import { AudioMimeTypes, PreviewAudioOptions } from '../types/audio';
+import { ThumbnailFile, ProcessedFile, SelectionOptions, ProcessedMainFile, RuleType } from '../types/common';
 
 let ffmpeg: FFmpeg | null = null;
 
