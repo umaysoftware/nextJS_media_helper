@@ -1,7 +1,7 @@
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import imageCompression from 'browser-image-compression';
-import { ProcessedFile } from '../types';
-import { AudioMimeTypes } from '../types';
+import { AudioMimeTypes, PreviewAudioOptions } from '@/types/audio';
+import { ThumbnailFile } from '@/types/common';
 
 
 
@@ -9,11 +9,11 @@ const isAudioFile = (file: File): boolean => {
     return file.type.startsWith('audio/');
 }
 
-const compressAudio = async (file: File, options: any): Promise<File> => {
+const compressAudio = async (file: File, compressQuality: number): Promise<File> => {
     // Implement audio compression logic here
 }
 
-const generateAudioThumbnail = async (file: File, options: any): Promise<File> => {
+const generateAudioThumbnail = async (file: File, options: PreviewAudioOptions): Promise<ThumbnailFile> => {
     // Implement audio thumbnail generation logic here
 }
 

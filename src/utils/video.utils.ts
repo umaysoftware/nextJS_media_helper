@@ -8,7 +8,7 @@ const isVideoFile = (file: File): boolean => {
     return file.type.startsWith('video/');
 }
 
-const compressVideo = async (file: File, options: any): Promise<File> => {
+const compressVideo = async (file: File, compressQuality: number): Promise<File> => {
 
 }
 

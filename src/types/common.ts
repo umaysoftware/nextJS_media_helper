@@ -1,0 +1,76 @@
+/**
+ * Seçilen medya dosyasının temel bilgilerini içeren interface
+ * Bu interface, dosya seçildikten sonra ilk validasyon için kullanılır
+ */
+export interface FileSelection {
+    name: string;      // Dosya adı (örn: "photo.jpg")
+    size: number;      // Dosya boyutu (byte cinsinden)
+    type: string;      // Dosya tipi (örn: "image", "video", "audio")
+    extension: string; // Dosya uzantısı (örn: ".jpg", ".mp4")
+    mimeType: string;  // MIME tipi (örn: "image/jpeg", "video/mp4")
+}
+
+
+
+
+
+
+
+
+/**
+ * İşlenmiş dosya interface'i
+ * işlenen dosyanın tüm bilgilerini içerir
+ */
+
+export interface ThumbnailFile {
+    base64?: string; // Base64 formatında string (opsiyonel)
+    blob?: Blob;     // Blob objesi (opsiyonel)
+    file?: File; // İşlenmiş dosya (opsiyonel, örneğin sıkıştırılmış) 
+}
+
+export interface ProcessedMainFile {
+    base64?: string; // Base64 formatında string (opsiyonel)
+    blob?: Blob;     // Blob objesi (opsiyonel)
+    file?: File; // İşlenmiş dosya (opsiyonel, örneğin sıkıştırılmış)
+}
+
+export interface ProcessedFile {
+    // Temel dosya bilgileri
+    name: string;      // Dosya adı
+    size: number;      // Dosya boyutu (byte)
+    type: string;      // Dosya tipi (image, video, audio, document, vb.)
+    extension: string; // Dosya uzantısı (.jpg, .mp4, vb.)
+    mimeType: string;  // MIME tipi (image/jpeg, video/mp4, vb.)
+
+    // Dosya içeriği (farklı formatlarda)
+    originalFile: File; // Orijinal dosya (her zaman mevcut)
+
+    // İşlenmiş dosya bilgileri
+    processed: ProcessedMainFile
+
+    // Thumbnail bilgisi (sadece resimler için)
+    thumbnail?: ThumbnailFile
+}
+
+
+
+
+
+
+
+// *** RULE TYPES *** //
+export interface RuleInfo {
+    allowedMimeTypes?: string[];  // İzin verilen MIME tipleri
+    minSelectionCount?: number;   // Minimum seçilmesi gereken dosya sayısı
+    maxSelectionCount?: number;   // Maximum seçilebilecek dosya sayısı
+    minFileSize?: number;         // Minimum dosya boyutu (byte)
+    maxFileSize?: number;         // Maximum dosya boyutu (byte)
+
+    willGenerateBase64?: boolean; // bu dosya için Base64 formatında string üretilecek mi
+    willGenerateBlob?: boolean;   // bu dosya için Blob objesi üretilecek mi
+    compressQuality?: number; // Sıkıştırma kalitesi (0-100 arası, resimler video ve ses dosyaları için)
+}
+
+export interface SelectionOptions {
+    rules?: RuleInfo | RuleInfo[]; // Tek bir kural veya kural dizisi
+}

@@ -8,7 +8,7 @@ const isImageFile = (file: File): boolean => {
   return file.type.startsWith('image/');
 }
 
-const compressImage = async (file: File, options: any): Promise<File> => {
+const compressImage = async (file: File, compressQuality: number): Promise<File> => {
 
 }
 
