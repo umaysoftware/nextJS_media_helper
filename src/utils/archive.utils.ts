@@ -49,6 +49,7 @@ const compressArchive = async (file: File, compressQuality: number): Promise<Fil
     return file;
 };
 
+// @ts-ignore
 const generateArchiveThumbnail = async (file: File): Promise<ThumbnailFile> => {
     // Generate a simple icon-based thumbnail for archive files
     const canvas = document.createElement('canvas');
@@ -104,7 +105,7 @@ const generateArchiveThumbnail = async (file: File): Promise<ThumbnailFile> => {
                     return;
                 }
 
-                const thumbnailFile = new File([blob], 'thumbnail.png', { type: 'image/png' });
+                const thumbnailFile = new File([blob], 'thumbnail.webp', { type: 'image/webp' });
                 const base64 = await fileToBase64(thumbnailFile);
 
                 resolve({
@@ -113,7 +114,7 @@ const generateArchiveThumbnail = async (file: File): Promise<ThumbnailFile> => {
                     file: thumbnailFile
                 });
             },
-            'image/png',
+            'image/webp',
             0.9
         );
     });
@@ -181,7 +182,7 @@ const processArchiveFiles = async (files: File[], options?: SelectionOptions): P
         processedMainFile.file = processedArchive;
 
         // Always generate a thumbnail for archives
-        thumbnailFile = await generateArchiveThumbnail(file);
+        // thumbnailFile = await generateArchiveThumbnail(file);
 
         const extension = '.' + file.name.split('.').pop()!.toLowerCase();
 

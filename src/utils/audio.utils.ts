@@ -84,6 +84,7 @@ const compressAudio = async (file: File, compressQuality: number): Promise<File>
     return new File([blob], file.name.replace(/\.[^/.]+$/, '.mp3'), { type: AudioMimeTypes.MP3 });
 };
 
+// @ts-ignore
 const generateAudioThumbnail = async (file: File, options: PreviewAudioOptions): Promise<ThumbnailFile> => {
     const ffmpeg = await initFFmpeg();
     const inputName = 'input.' + file.name.split('.').pop();
@@ -138,6 +139,74 @@ const generateAudioThumbnail = async (file: File, options: PreviewAudioOptions):
         file: new File([blob], `preview.${options.format || 'mp3'}`, { type: mimeType })
     };
 };
+
+// @ts-ignore
+export const generateAudioVisualThumbnail = async (file: File): Promise<ThumbnailFile> => {
+    // For audio files, we'll generate a visual waveform thumbnail in WebP format
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Failed to get canvas context');
+
+    canvas.width = 200;
+    canvas.height = 200;
+
+    // Background
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Waveform visualization (simulated)
+    ctx.strokeStyle = '#00ff00';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+
+    const centerY = canvas.height / 2;
+    const amplitude = 40;
+
+    for (let x = 0; x < canvas.width; x += 3) {
+        const y = centerY + Math.sin((x / canvas.width) * Math.PI * 8) * amplitude * Math.random();
+        if (x === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
+    }
+    ctx.stroke();
+
+    // Audio icon
+    ctx.fillStyle = '#00ff00';
+    ctx.font = '30px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('🎵', 100, 50);
+
+    // File extension
+    const extension = file.name.split('.').pop()?.toUpperCase() || 'AUDIO';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 16px Arial';
+    ctx.fillText(extension, 100, 180);
+
+    return new Promise((resolve, reject) => {
+        canvas.toBlob(
+            async (blob) => {
+                if (!blob) {
+                    reject(new Error('Failed to generate audio thumbnail'));
+                    return;
+                }
+
+                const thumbnailFile = new File([blob], 'thumbnail.webp', { type: 'image/webp' });
+                const base64 = await fileToBase64(thumbnailFile);
+
+                resolve({
+                    base64,
+                    blob,
+                    file: thumbnailFile
+                });
+            },
+            'image/webp',
+            0.9
+        );
+    });
+};
+
 
 // @ts-ignore
 const cropAudio = async (file: File, cropOptions: { startAt: number; duration: number }): Promise<File> => {
@@ -258,13 +327,8 @@ const processAudioFiles = async (files: File[], options?: SelectionOptions): Pro
 
         processedMainFile.file = processedAudio;
 
-        const defaultPreviewOptions: PreviewAudioOptions = {
-            startAt: 0,
-            duration: 30,
-            compressQuality: 75,
-            format: 'mp3'
-        };
-        thumbnailFile = await generateAudioThumbnail(file, defaultPreviewOptions);
+        // Generate visual thumbnail for audio files
+        // thumbnailFile = await generateAudioVisualThumbnail(file);
 
         const extension = '.' + file.name.split('.').pop()!.toLowerCase();
 

@@ -53,6 +53,7 @@ const compressDocument = async (file: File, compressQuality: number): Promise<Fi
     return file;
 };
 
+// @ts-ignore
 const generateDocumentThumbnail = async (file: File): Promise<ThumbnailFile> => {
     // Generate a simple text-based thumbnail for documents
     // In a real implementation, you might use a library to generate PDF previews
@@ -100,7 +101,7 @@ const generateDocumentThumbnail = async (file: File): Promise<ThumbnailFile> => 
                     return;
                 }
 
-                const thumbnailFile = new File([blob], 'thumbnail.png', { type: 'image/png' });
+                const thumbnailFile = new File([blob], 'thumbnail.webp', { type: 'image/webp' });
                 const base64 = await fileToBase64(thumbnailFile);
 
                 resolve({
@@ -109,7 +110,7 @@ const generateDocumentThumbnail = async (file: File): Promise<ThumbnailFile> => 
                     file: thumbnailFile
                 });
             },
-            'image/png',
+            'image/webp',
             0.9
         );
     });
@@ -180,7 +181,7 @@ const processDocumentFiles = async (files: File[], options?: SelectionOptions): 
         processedMainFile.file = processedDocument;
 
         // Always generate a thumbnail for documents
-        thumbnailFile = await generateDocumentThumbnail(file);
+        // thumbnailFile = await generateDocumentThumbnail(file);
 
         const extension = '.' + file.name.split('.').pop()!.toLowerCase();
 
