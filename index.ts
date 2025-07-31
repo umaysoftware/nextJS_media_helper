@@ -1,18 +1,41 @@
-import { SelectionOptions, ProcessedFile } from './src/types';
+import { SelectionOptions, ProcessedFile, RuleInfo } from './src/types';
 import { FileProcessor } from './src/processors/file.processor';
 import { ImageProcessor } from './src/processors/image.processor';
 import { VideoProcessor } from './src/processors/video.processor';
 import { AudioProcessor } from './src/processors/audio.processor';
 
 export class MediaHelper {
+  /**
+   * Ensure rules have default willGenerateFile value
+   */
+  private static ensureDefaultWillGenerate(rules?: RuleInfo | RuleInfo[]): RuleInfo | RuleInfo[] | undefined {
+    if (!rules) return undefined;
+    
+    if (Array.isArray(rules)) {
+      return rules.map(rule => ({
+        willGenerateFile: true,
+        ...rule
+      }));
+    }
+    
+    return {
+      willGenerateFile: true,
+      ...rules
+    };
+  }
+
   static async pickFile(selectionOptions: SelectionOptions): Promise<ProcessedFile[]> {
-    return FileProcessor.selectAndProcess(selectionOptions);
+    const options = {
+      ...selectionOptions,
+      rules: this.ensureDefaultWillGenerate(selectionOptions.rules)
+    };
+    return FileProcessor.selectAndProcess(options);
   }
 
   static async pickImage(selectionOptions?: Partial<SelectionOptions>): Promise<ProcessedFile[]> {
     const options: SelectionOptions = {
-      willGenerateFile: true,
-      ...selectionOptions
+      ...selectionOptions,
+      rules: this.ensureDefaultWillGenerate(selectionOptions?.rules)
     };
 
     const files = await FileProcessor.selectAndProcess(
@@ -25,8 +48,8 @@ export class MediaHelper {
 
   static async pickVideo(selectionOptions?: Partial<SelectionOptions>): Promise<ProcessedFile[]> {
     const options: SelectionOptions = {
-      willGenerateFile: true,
-      ...selectionOptions
+      ...selectionOptions,
+      rules: this.ensureDefaultWillGenerate(selectionOptions?.rules)
     };
 
     const files = await FileProcessor.selectAndProcess(
@@ -39,8 +62,8 @@ export class MediaHelper {
 
   static async pickSound(selectionOptions?: Partial<SelectionOptions>): Promise<ProcessedFile[]> {
     const options: SelectionOptions = {
-      willGenerateFile: true,
-      ...selectionOptions
+      ...selectionOptions,
+      rules: this.ensureDefaultWillGenerate(selectionOptions?.rules)
     };
 
     const files = await FileProcessor.selectAndProcess(

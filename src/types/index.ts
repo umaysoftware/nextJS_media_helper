@@ -16,6 +16,11 @@ export interface SelectionFile {
  * Her bir kural opsiyoneldir ve ihtiyaca göre kullanılabilir
  */
 export interface RuleInfo {
+  willGenerateBase64?: boolean; // Base64 formatında string üretilecek mi
+  willGenerateBlob?: boolean;   // Blob objesi üretilecek mi
+  willGenerateFile?: boolean;   // File objesi üretilecek mi (default: true)
+  willGenerateThumbnail?: boolean; // Thumbnail üretilecek mi
+
   // Genel dosya kuralları
   allowedMimeTypes?: string[];  // İzin verilen MIME tipleri
   minSelectionCount?: number;   // Minimum seçilmesi gereken dosya sayısı
@@ -49,12 +54,8 @@ export interface RuleInfo {
 
 /**
  * Dosya seçim ve işleme seçenekleri
- * Hangi formatlarda çıktı üretileceğini belirler
  */
 export interface SelectionOptions {
-  willGenerateBase64?: boolean; // Base64 formatında string üretilecek mi
-  willGenerateBlob?: boolean;   // Blob objesi üretilecek mi
-  willGenerateFile?: boolean;   // File objesi üretilecek mi (default: true)
   rules?: RuleInfo | RuleInfo[]; // Tek bir kural veya kural dizisi
 }
 

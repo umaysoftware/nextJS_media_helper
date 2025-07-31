@@ -1,4 +1,4 @@
-import { SelectionOptions, ProcessedFile } from '../types';
+import { SelectionOptions, ProcessedFile, RuleInfo } from '../types';
 import { FileProcessor } from './file.processor';
 import {
   VIDEO_MIME_TYPES,
@@ -64,20 +64,23 @@ export class VideoProcessor {
 
         // Generate thumbnail if requested
         let thumbnail: ProcessedFile | undefined;
-        if (fileRule?.thumbnailSize) {
+        if (fileRule?.willGenerateThumbnail && fileRule?.thumbnailSize) {
           try {
             const thumbnailBlob = await generateVideoThumbnail(processedFile.file);
             const thumbnailFile = new File([thumbnailBlob], `thumb_${processedFile.name}.jpg`, {
               type: 'image/jpeg'
             });
 
+            // Create thumbnail rule
+            const thumbnailRule: RuleInfo = {
+              willGenerateBase64: fileRule?.willGenerateBase64,
+              willGenerateBlob: true,
+              willGenerateFile: true
+            };
+
             thumbnail = await createProcessedFile(
               thumbnailFile,
-              {
-                willGenerateBase64: options.willGenerateBase64,
-                willGenerateBlob: true,
-                willGenerateFile: true
-              }
+              thumbnailRule
             );
           } catch (error) {
             console.warn('Failed to generate video thumbnail:', error);

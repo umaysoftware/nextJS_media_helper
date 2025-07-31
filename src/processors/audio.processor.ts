@@ -1,4 +1,4 @@
-import { SelectionOptions, ProcessedFile } from '../types';
+import { SelectionOptions, ProcessedFile, RuleInfo } from '../types';
 import { FileProcessor } from './file.processor';
 import {
   AUDIO_MIME_TYPES,
@@ -61,7 +61,7 @@ export class AudioProcessor {
 
         // Generate thumbnail (waveform visualization) if requested
         let thumbnail: ProcessedFile | undefined;
-        if (fileRule?.thumbnailSize) {
+        if (fileRule?.willGenerateThumbnail && fileRule?.thumbnailSize) {
           try {
             const thumbnailSizes = {
               small: { width: 150, height: 75 },
@@ -80,13 +80,16 @@ export class AudioProcessor {
               type: 'image/png'
             });
 
+            // Create thumbnail rule
+            const thumbnailRule: RuleInfo = {
+              willGenerateBase64: fileRule?.willGenerateBase64,
+              willGenerateBlob: true,
+              willGenerateFile: true
+            };
+
             thumbnail = await createProcessedFile(
               thumbnailFile,
-              {
-                willGenerateBase64: options.willGenerateBase64,
-                willGenerateBlob: true,
-                willGenerateFile: true
-              }
+              thumbnailRule
             );
           } catch (error) {
             console.warn('Failed to generate audio thumbnail:', error);

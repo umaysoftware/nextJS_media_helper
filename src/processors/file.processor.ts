@@ -72,7 +72,7 @@ export class FileProcessor {
         }
 
         // Create processed file
-        const processedFile = await createProcessedFile(file, options);
+        const processedFile = await createProcessedFile(file, fileRule);
         processedFiles.push(processedFile);
       } catch (error) {
         errors.push(`${file.name}: Failed to process file`);

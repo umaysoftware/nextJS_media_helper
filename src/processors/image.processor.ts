@@ -1,4 +1,4 @@
-import { SelectionOptions, ProcessedFile } from '../types';
+import { SelectionOptions, ProcessedFile, RuleInfo } from '../types';
 import { FileProcessor } from './file.processor';
 import {
   IMAGE_MIME_TYPES,
@@ -82,10 +82,10 @@ export class ImageProcessor {
             processedFile.size = processedImageFile.size;
 
             // Regenerate base64/blob if needed
-            if (options.willGenerateBase64 || options.willGenerateBlob) {
+            if (fileRule?.willGenerateBase64 || fileRule?.willGenerateBlob) {
               const reprocessed = await createProcessedFile(
                 processedImageFile,
-                options,
+                fileRule,
                 processedFile.thumbnail
               );
               Object.assign(processedFile, reprocessed);
@@ -97,7 +97,7 @@ export class ImageProcessor {
 
         // Generate thumbnail if requested
         let thumbnail: ProcessedFile | undefined;
-        if (fileRule?.thumbnailSize) {
+        if (fileRule?.willGenerateThumbnail && fileRule?.thumbnailSize) {
           try {
             const thumbnailBlob = await generateImageThumbnail(
               processedImageFile,
@@ -111,13 +111,16 @@ export class ImageProcessor {
               type: `image/${ext}`
             });
 
+            // Create thumbnail rule
+            const thumbnailRule: RuleInfo = {
+              willGenerateBase64: fileRule?.willGenerateBase64,
+              willGenerateBlob: true,
+              willGenerateFile: true
+            };
+
             thumbnail = await createProcessedFile(
               thumbnailFile,
-              {
-                willGenerateBase64: options.willGenerateBase64,
-                willGenerateBlob: true,
-                willGenerateFile: true
-              }
+              thumbnailRule
             );
           } catch (error) {
             console.warn('Failed to generate image thumbnail:', error);

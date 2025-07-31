@@ -64,9 +64,10 @@ const MyComponent = () => {
 ```typescript
 const handleAdvancedImagePick = async () => {
   const options: Partial<SelectionOptions> = {
-    willGenerateBase64: true,
-    willGenerateBlob: true,
     rules: {
+      willGenerateBase64: true,
+      willGenerateBlob: true,
+      willGenerateThumbnail: true,
       maxSelectionCount: 5,
       minSelectionCount: 1,
       maxFileSize: 5 * 1024 * 1024, // 5MB
@@ -106,9 +107,10 @@ const handleAdvancedImagePick = async () => {
 ```typescript
 const handleVideoPick = async () => {
   const options: Partial<SelectionOptions> = {
-    willGenerateBase64: false, // Video için base64 önerilmez
-    willGenerateBlob: true,
     rules: {
+      willGenerateBase64: false, // Video için base64 önerilmez
+      willGenerateBlob: true,
+      willGenerateThumbnail: true,
       maxSelectionCount: 3,
       maxFileSize: 100 * 1024 * 1024, // 100MB
       videoDurationLimit: 300, // 5 dakika (saniye)
@@ -150,6 +152,8 @@ const handleVideoPick = async () => {
 const handleAudioPick = async () => {
   const options: Partial<SelectionOptions> = {
     rules: {
+      willGenerateFile: true,
+      willGenerateThumbnail: true,
       maxSelectionCount: 10,
       maxFileSize: 20 * 1024 * 1024, // 20MB
       audioDurationLimit: 600, // 10 dakika
@@ -185,10 +189,10 @@ const handleAudioPick = async () => {
 ```typescript
 const handleFilePick = async () => {
   const options: SelectionOptions = {
-    willGenerateFile: true,
-    willGenerateBase64: false,
-    willGenerateBlob: false,
     rules: {
+      willGenerateFile: true,
+      willGenerateBase64: false,
+      willGenerateBlob: false,
       allowedMimeTypes: [
         'application/pdf',
         'application/msword',
@@ -219,14 +223,14 @@ const handleFilePick = async () => {
 ```typescript
 const handleMultiRulePick = async () => {
   const options: SelectionOptions = {
-    willGenerateFile: true,
-    willGenerateBase64: true,
-    willGenerateBlob: false,
     rules: [
       // Resimler için kurallar
       {
         allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
         maxFileSize: 5 * 1024 * 1024, // 5MB
+        willGenerateFile: true,
+        willGenerateBase64: true,
+        willGenerateThumbnail: true,
         imageCompression: 'high',
         imageResolution: 'high',
         thumbnailSize: 'medium',
@@ -236,6 +240,9 @@ const handleMultiRulePick = async () => {
       {
         allowedMimeTypes: ['video/mp4', 'video/webm'],
         maxFileSize: 100 * 1024 * 1024, // 100MB
+        willGenerateFile: true,
+        willGenerateBlob: true,
+        willGenerateThumbnail: true,
         videoDurationLimit: 300, // 5 dakika
         videoResolution: 'high',
         thumbnailSize: 'large'
@@ -244,7 +251,9 @@ const handleMultiRulePick = async () => {
       {
         allowedMimeTypes: ['application/pdf'],
         maxFileSize: 20 * 1024 * 1024, // 20MB
-        minFileSize: 100 * 1024 // 100KB
+        minFileSize: 100 * 1024, // 100KB
+        willGenerateFile: true,
+        willGenerateBase64: true
       }
     ]
   };
@@ -278,13 +287,14 @@ const handleMultiRulePick = async () => {
 ```typescript
 const handleMixedMediaPick = async () => {
   const options: SelectionOptions = {
-    willGenerateBase64: false,
-    willGenerateBlob: true,
     rules: [
       // Sosyal medya için resim kuralları
       {
         allowedMimeTypes: ['image/jpeg', 'image/png'],
         maxFileSize: 10 * 1024 * 1024, // 10MB
+        willGenerateFile: true,
+        willGenerateBlob: true,
+        willGenerateThumbnail: true,
         imageAspectRatio: 'square', // Instagram gibi
         imageResolution: 'high',
         thumbnailSize: 'small'
@@ -293,6 +303,9 @@ const handleMixedMediaPick = async () => {
       {
         allowedMimeTypes: ['video/mp4'],
         maxFileSize: 50 * 1024 * 1024, // 50MB
+        willGenerateFile: true,
+        willGenerateBlob: true,
+        willGenerateThumbnail: true,
         videoDurationLimit: 60, // 1 dakika
         videoResolution: 'medium',
         thumbnailSize: 'medium'
@@ -301,6 +314,8 @@ const handleMixedMediaPick = async () => {
       {
         allowedMimeTypes: ['audio/mp3', 'audio/wav'],
         maxFileSize: 15 * 1024 * 1024, // 15MB
+        willGenerateFile: true,
+        willGenerateThumbnail: true,
         audioDurationLimit: 180, // 3 dakika
         audioSampleRate: 'high',
         thumbnailSize: 'small' // Waveform
@@ -345,13 +360,14 @@ const MediaUploader: React.FC = () => {
     try {
       const images = await MediaHelper.pickImage({
         rules: {
+          willGenerateBase64: true,
+          willGenerateThumbnail: true,
           maxSelectionCount: 3,
           maxFileSize: 5 * 1024 * 1024,
           imageCompression: 'medium',
           thumbnailSize: 'small',
           thumbnailFormat: 'webp'
-        },
-        willGenerateBase64: true
+        }
       });
       
       setSelectedFiles(images);

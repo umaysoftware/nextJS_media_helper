@@ -1,4 +1,4 @@
-import { SelectionFile, ProcessedFile, SelectionOptions, RuleInfo } from '../types';
+import { SelectionFile, ProcessedFile, RuleInfo } from '../types';
 
 /**
  * Convert File to SelectionFile
@@ -126,7 +126,7 @@ export const validateMimeType = (
  */
 export const createProcessedFile = async (
   file: File,
-  options: SelectionOptions,
+  rule?: RuleInfo,
   thumbnail?: ProcessedFile
 ): Promise<ProcessedFile> => {
   const selectionFile = fileToSelectionFile(file);
@@ -141,12 +141,12 @@ export const createProcessedFile = async (
   };
 
   // Generate base64 if requested
-  if (options.willGenerateBase64) {
+  if (rule?.willGenerateBase64) {
     processedFile.base64 = await fileToBase64(file);
   }
 
   // Generate blob if requested
-  if (options.willGenerateBlob) {
+  if (rule?.willGenerateBlob) {
     processedFile.blob = await fileToBlob(file);
   }
 
@@ -213,7 +213,7 @@ export const getMatchingRule = (
   rules?: RuleInfo | RuleInfo[]
 ): RuleInfo | undefined => {
   if (!rules) return undefined;
-  
+
   // If single rule, return it if MIME type matches or no MIME types specified
   if (!Array.isArray(rules)) {
     if (!rules.allowedMimeTypes || rules.allowedMimeTypes.length === 0) {
@@ -221,7 +221,7 @@ export const getMatchingRule = (
     }
     return rules.allowedMimeTypes.includes(file.type) ? rules : undefined;
   }
-  
+
   // If array of rules, find the first matching rule
   return rules.find(rule => {
     if (!rule.allowedMimeTypes || rule.allowedMimeTypes.length === 0) {
@@ -236,7 +236,7 @@ export const getMatchingRule = (
  */
 export const mergeRules = (rules: RuleInfo[]): RuleInfo => {
   const merged: RuleInfo = {};
-  
+
   rules.forEach(rule => {
     // Merge MIME types
     if (rule.allowedMimeTypes) {
@@ -245,7 +245,7 @@ export const mergeRules = (rules: RuleInfo[]): RuleInfo => {
         ...rule.allowedMimeTypes
       ];
     }
-    
+
     // Take the most restrictive values for limits
     if (rule.minSelectionCount !== undefined) {
       merged.minSelectionCount = Math.max(
@@ -253,26 +253,26 @@ export const mergeRules = (rules: RuleInfo[]): RuleInfo => {
         rule.minSelectionCount
       );
     }
-    
+
     if (rule.maxSelectionCount !== undefined) {
       merged.maxSelectionCount = merged.maxSelectionCount
         ? Math.min(merged.maxSelectionCount, rule.maxSelectionCount)
         : rule.maxSelectionCount;
     }
-    
+
     if (rule.maxFileSize !== undefined) {
       merged.maxFileSize = merged.maxFileSize
         ? Math.min(merged.maxFileSize, rule.maxFileSize)
         : rule.maxFileSize;
     }
-    
+
     if (rule.minFileSize !== undefined) {
       merged.minFileSize = Math.max(
         merged.minFileSize || 0,
         rule.minFileSize
       );
     }
-    
+
     // Copy other properties from the last rule
     Object.keys(rule).forEach(key => {
       if (!['allowedMimeTypes', 'minSelectionCount', 'maxSelectionCount', 'maxFileSize', 'minFileSize'].includes(key)) {
@@ -280,11 +280,11 @@ export const mergeRules = (rules: RuleInfo[]): RuleInfo => {
       }
     });
   });
-  
+
   // Remove duplicate MIME types
   if (merged.allowedMimeTypes) {
     merged.allowedMimeTypes = [...new Set(merged.allowedMimeTypes)];
   }
-  
+
   return merged;
 };
