@@ -1,6 +1,6 @@
-import { SelectionOptions, ProcessedFile, RuleInfo } from '../types';
+import { SelectionOptions, ProcessedFile } from '../types';
 import { FileProcessor } from './file.processor';
-import { 
+import {
   AUDIO_MIME_TYPES,
   validateAudioFile,
   generateAudioThumbnail,
@@ -34,7 +34,7 @@ export class AudioProcessor {
       try {
         // Get matching rule for this audio file
         const fileRule = getMatchingRule(processedFile.file, options.rules);
-        
+
         // Validate audio-specific rules
         const validationOptions: any = {};
 
@@ -53,7 +53,7 @@ export class AudioProcessor {
         }
 
         const validation = await validateAudioFile(processedFile.file, validationOptions);
-        
+
         if (!validation.valid) {
           console.warn(`Audio validation failed for ${processedFile.name}:`, validation.errors);
           continue;
@@ -68,18 +68,18 @@ export class AudioProcessor {
               medium: { width: 300, height: 150 },
               large: { width: 500, height: 250 }
             };
-            
+
             const size = thumbnailSizes[fileRule.thumbnailSize];
             const thumbnailBlob = await generateAudioThumbnail(
               processedFile.file,
               size.width,
               size.height
             );
-            
+
             const thumbnailFile = new File([thumbnailBlob], `thumb_${processedFile.name}.png`, {
               type: 'image/png'
             });
-            
+
             thumbnail = await createProcessedFile(
               thumbnailFile,
               {
@@ -118,7 +118,7 @@ export class AudioProcessor {
     bitrate?: string;
   }> {
     const metadata = await getAudioMetadata(file);
-    
+
     // Estimate bitrate based on file size and duration
     let bitrate: string | undefined;
     if (metadata.duration > 0) {

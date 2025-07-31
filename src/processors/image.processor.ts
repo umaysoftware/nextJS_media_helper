@@ -1,6 +1,6 @@
-import { SelectionOptions, ProcessedFile, RuleInfo } from '../types';
+import { SelectionOptions, ProcessedFile } from '../types';
 import { FileProcessor } from './file.processor';
-import { 
+import {
   IMAGE_MIME_TYPES,
   validateImageFile,
   generateImageThumbnail,
@@ -37,7 +37,7 @@ export class ImageProcessor {
       try {
         // Get matching rule for this image file
         const fileRule = getMatchingRule(processedFile.file, options.rules);
-        
+
         // Validate image-specific rules
         const validationOptions: any = {};
 
@@ -59,7 +59,7 @@ export class ImageProcessor {
         }
 
         const validation = await validateImageFile(processedFile.file, validationOptions);
-        
+
         if (!validation.valid) {
           console.warn(`Image validation failed for ${processedFile.name}:`, validation.errors);
           continue;
@@ -76,11 +76,11 @@ export class ImageProcessor {
             processedImageFile = new File([compressedBlob], processedFile.name, {
               type: processedFile.mimeType
             });
-            
+
             // Update the processed file with compressed version
             processedFile.file = processedImageFile;
             processedFile.size = processedImageFile.size;
-            
+
             // Regenerate base64/blob if needed
             if (options.willGenerateBase64 || options.willGenerateBlob) {
               const reprocessed = await createProcessedFile(
@@ -105,12 +105,12 @@ export class ImageProcessor {
               fileRule.thumbnailFormat || 'jpeg',
               fileRule.thumbnailQuality || 'medium'
             );
-            
+
             const ext = fileRule.thumbnailFormat || 'jpeg';
             const thumbnailFile = new File([thumbnailBlob], `thumb_${processedFile.name}.${ext}`, {
               type: `image/${ext}`
             });
-            
+
             thumbnail = await createProcessedFile(
               thumbnailFile,
               {

@@ -1,6 +1,6 @@
-import { SelectionOptions, ProcessedFile, RuleInfo } from '../types';
+import { SelectionOptions, ProcessedFile } from '../types';
 import { FileProcessor } from './file.processor';
-import { 
+import {
   VIDEO_MIME_TYPES,
   validateVideoFile,
   generateVideoThumbnail,
@@ -35,7 +35,7 @@ export class VideoProcessor {
       try {
         // Get matching rule for this video file
         const fileRule = getMatchingRule(processedFile.file, options.rules);
-        
+
         // Validate video-specific rules
         const validationOptions: any = {};
 
@@ -56,7 +56,7 @@ export class VideoProcessor {
         }
 
         const validation = await validateVideoFile(processedFile.file, validationOptions);
-        
+
         if (!validation.valid) {
           console.warn(`Video validation failed for ${processedFile.name}:`, validation.errors);
           continue;
@@ -70,7 +70,7 @@ export class VideoProcessor {
             const thumbnailFile = new File([thumbnailBlob], `thumb_${processedFile.name}.jpg`, {
               type: 'image/jpeg'
             });
-            
+
             thumbnail = await createProcessedFile(
               thumbnailFile,
               {
