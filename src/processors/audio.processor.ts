@@ -1,4 +1,4 @@
-import { SelectionOptions, ProcessedFile } from '../types';
+import { SelectionOptions, ProcessedFile, RuleInfo } from '../types';
 import { FileProcessor } from './file.processor';
 import { 
   AUDIO_MIME_TYPES,
@@ -6,7 +6,7 @@ import {
   generateAudioThumbnail,
   getAudioMetadata
 } from '../utils/audio.utils';
-import { createProcessedFile } from '../utils/common.utils';
+import { createProcessedFile, getMatchingRule } from '../utils/common.utils';
 
 export class AudioProcessor {
   /**
@@ -32,21 +32,24 @@ export class AudioProcessor {
     // Enhance each processed file with audio-specific processing
     for (const processedFile of processedFiles) {
       try {
+        // Get matching rule for this audio file
+        const fileRule = getMatchingRule(processedFile.file, options.rules);
+        
         // Validate audio-specific rules
         const validationOptions: any = {};
 
-        if (options.rules?.audioDurationLimit) {
-          validationOptions.maxDuration = options.rules.audioDurationLimit;
+        if (fileRule?.audioDurationLimit) {
+          validationOptions.maxDuration = fileRule.audioDurationLimit;
         }
 
         // Map bitrate/sample rate to actual values
-        if (options.rules?.audioSampleRate) {
+        if (fileRule?.audioSampleRate) {
           const sampleRateMap = {
             low: 22050,
             medium: 44100,
             high: 48000
           };
-          validationOptions.maxSampleRate = sampleRateMap[options.rules.audioSampleRate];
+          validationOptions.maxSampleRate = sampleRateMap[fileRule.audioSampleRate];
         }
 
         const validation = await validateAudioFile(processedFile.file, validationOptions);
@@ -58,7 +61,7 @@ export class AudioProcessor {
 
         // Generate thumbnail (waveform visualization) if requested
         let thumbnail: ProcessedFile | undefined;
-        if (options.rules?.thumbnailSize) {
+        if (fileRule?.thumbnailSize) {
           try {
             const thumbnailSizes = {
               small: { width: 150, height: 75 },
@@ -66,7 +69,7 @@ export class AudioProcessor {
               large: { width: 500, height: 250 }
             };
             
-            const size = thumbnailSizes[options.rules.thumbnailSize];
+            const size = thumbnailSizes[fileRule.thumbnailSize];
             const thumbnailBlob = await generateAudioThumbnail(
               processedFile.file,
               size.width,

@@ -1,4 +1,4 @@
-import { SelectionFile, ProcessedFile, SelectionOptions } from '../types';
+import { SelectionFile, ProcessedFile, SelectionOptions, RuleInfo } from '../types';
 
 /**
  * Convert File to SelectionFile
@@ -203,4 +203,88 @@ export const selectFiles = (
  */
 export const isBrowser = (): boolean => {
   return typeof window !== 'undefined' && typeof document !== 'undefined';
+};
+
+/**
+ * Get matching rule for a file
+ */
+export const getMatchingRule = (
+  file: File,
+  rules?: RuleInfo | RuleInfo[]
+): RuleInfo | undefined => {
+  if (!rules) return undefined;
+  
+  // If single rule, return it if MIME type matches or no MIME types specified
+  if (!Array.isArray(rules)) {
+    if (!rules.allowedMimeTypes || rules.allowedMimeTypes.length === 0) {
+      return rules;
+    }
+    return rules.allowedMimeTypes.includes(file.type) ? rules : undefined;
+  }
+  
+  // If array of rules, find the first matching rule
+  return rules.find(rule => {
+    if (!rule.allowedMimeTypes || rule.allowedMimeTypes.length === 0) {
+      return true;
+    }
+    return rule.allowedMimeTypes.includes(file.type);
+  });
+};
+
+/**
+ * Merge multiple rules (for cases where we need to combine rules)
+ */
+export const mergeRules = (rules: RuleInfo[]): RuleInfo => {
+  const merged: RuleInfo = {};
+  
+  rules.forEach(rule => {
+    // Merge MIME types
+    if (rule.allowedMimeTypes) {
+      merged.allowedMimeTypes = [
+        ...(merged.allowedMimeTypes || []),
+        ...rule.allowedMimeTypes
+      ];
+    }
+    
+    // Take the most restrictive values for limits
+    if (rule.minSelectionCount !== undefined) {
+      merged.minSelectionCount = Math.max(
+        merged.minSelectionCount || 0,
+        rule.minSelectionCount
+      );
+    }
+    
+    if (rule.maxSelectionCount !== undefined) {
+      merged.maxSelectionCount = merged.maxSelectionCount
+        ? Math.min(merged.maxSelectionCount, rule.maxSelectionCount)
+        : rule.maxSelectionCount;
+    }
+    
+    if (rule.maxFileSize !== undefined) {
+      merged.maxFileSize = merged.maxFileSize
+        ? Math.min(merged.maxFileSize, rule.maxFileSize)
+        : rule.maxFileSize;
+    }
+    
+    if (rule.minFileSize !== undefined) {
+      merged.minFileSize = Math.max(
+        merged.minFileSize || 0,
+        rule.minFileSize
+      );
+    }
+    
+    // Copy other properties from the last rule
+    Object.keys(rule).forEach(key => {
+      if (!['allowedMimeTypes', 'minSelectionCount', 'maxSelectionCount', 'maxFileSize', 'minFileSize'].includes(key)) {
+        (merged as any)[key] = (rule as any)[key];
+      }
+    });
+  });
+  
+  // Remove duplicate MIME types
+  if (merged.allowedMimeTypes) {
+    merged.allowedMimeTypes = [...new Set(merged.allowedMimeTypes)];
+  }
+  
+  return merged;
 };

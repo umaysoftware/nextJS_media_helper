@@ -1,4 +1,4 @@
-import { SelectionOptions, ProcessedFile } from '../types';
+import { SelectionOptions, ProcessedFile, RuleInfo } from '../types';
 import { FileProcessor } from './file.processor';
 import { 
   VIDEO_MIME_TYPES,
@@ -7,7 +7,7 @@ import {
   getVideoDuration,
   getVideoDimensions
 } from '../utils/video.utils';
-import { createProcessedFile } from '../utils/common.utils';
+import { createProcessedFile, getMatchingRule } from '../utils/common.utils';
 
 export class VideoProcessor {
   /**
@@ -33,21 +33,24 @@ export class VideoProcessor {
     // Enhance each processed file with video-specific processing
     for (const processedFile of processedFiles) {
       try {
+        // Get matching rule for this video file
+        const fileRule = getMatchingRule(processedFile.file, options.rules);
+        
         // Validate video-specific rules
         const validationOptions: any = {};
 
-        if (options.rules?.videoDurationLimit) {
-          validationOptions.maxDuration = options.rules.videoDurationLimit;
+        if (fileRule?.videoDurationLimit) {
+          validationOptions.maxDuration = fileRule.videoDurationLimit;
         }
 
         // Map resolution to pixel values
-        if (options.rules?.videoResolution) {
+        if (fileRule?.videoResolution) {
           const resolutionMap = {
             low: { width: 640, height: 480 },
             medium: { width: 1280, height: 720 },
             high: { width: 1920, height: 1080 }
           };
-          const resolution = resolutionMap[options.rules.videoResolution];
+          const resolution = resolutionMap[fileRule.videoResolution];
           validationOptions.maxWidth = resolution.width;
           validationOptions.maxHeight = resolution.height;
         }
@@ -61,7 +64,7 @@ export class VideoProcessor {
 
         // Generate thumbnail if requested
         let thumbnail: ProcessedFile | undefined;
-        if (options.rules?.thumbnailSize) {
+        if (fileRule?.thumbnailSize) {
           try {
             const thumbnailBlob = await generateVideoThumbnail(processedFile.file);
             const thumbnailFile = new File([thumbnailBlob], `thumb_${processedFile.name}.jpg`, {

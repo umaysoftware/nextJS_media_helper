@@ -1,4 +1,4 @@
-import { SelectionOptions, ProcessedFile } from '../types';
+import { SelectionOptions, ProcessedFile, RuleInfo } from '../types';
 import { FileProcessor } from './file.processor';
 import { 
   IMAGE_MIME_TYPES,
@@ -9,7 +9,7 @@ import {
   compressImage,
   resizeImage
 } from '../utils/image.utils';
-import { createProcessedFile } from '../utils/common.utils';
+import { createProcessedFile, getMatchingRule } from '../utils/common.utils';
 
 export class ImageProcessor {
   /**
@@ -35,24 +35,27 @@ export class ImageProcessor {
     // Enhance each processed file with image-specific processing
     for (const processedFile of processedFiles) {
       try {
+        // Get matching rule for this image file
+        const fileRule = getMatchingRule(processedFile.file, options.rules);
+        
         // Validate image-specific rules
         const validationOptions: any = {};
 
         // Map resolution to pixel values
-        if (options.rules?.imageResolution) {
+        if (fileRule?.imageResolution) {
           const resolutionMap = {
             low: { width: 800, height: 600 },
             medium: { width: 1600, height: 1200 },
             high: { width: 3200, height: 2400 }
           };
-          const resolution = resolutionMap[options.rules.imageResolution];
+          const resolution = resolutionMap[fileRule.imageResolution];
           validationOptions.maxWidth = resolution.width;
           validationOptions.maxHeight = resolution.height;
         }
 
         // Check aspect ratio if specified
-        if (options.rules?.imageAspectRatio) {
-          validationOptions.allowedAspectRatios = [options.rules.imageAspectRatio];
+        if (fileRule?.imageAspectRatio) {
+          validationOptions.allowedAspectRatios = [fileRule.imageAspectRatio];
         }
 
         const validation = await validateImageFile(processedFile.file, validationOptions);
@@ -64,11 +67,11 @@ export class ImageProcessor {
 
         // Apply compression if specified
         let processedImageFile = processedFile.file;
-        if (options.rules?.imageCompression) {
+        if (fileRule?.imageCompression) {
           try {
             const compressedBlob = await compressImage(
               processedFile.file,
-              options.rules.imageCompression
+              fileRule.imageCompression
             );
             processedImageFile = new File([compressedBlob], processedFile.name, {
               type: processedFile.mimeType
@@ -94,16 +97,16 @@ export class ImageProcessor {
 
         // Generate thumbnail if requested
         let thumbnail: ProcessedFile | undefined;
-        if (options.rules?.thumbnailSize) {
+        if (fileRule?.thumbnailSize) {
           try {
             const thumbnailBlob = await generateImageThumbnail(
               processedImageFile,
-              options.rules.thumbnailSize,
-              options.rules.thumbnailFormat || 'jpeg',
-              options.rules.thumbnailQuality || 'medium'
+              fileRule.thumbnailSize,
+              fileRule.thumbnailFormat || 'jpeg',
+              fileRule.thumbnailQuality || 'medium'
             );
             
-            const ext = options.rules.thumbnailFormat || 'jpeg';
+            const ext = fileRule.thumbnailFormat || 'jpeg';
             const thumbnailFile = new File([thumbnailBlob], `thumb_${processedFile.name}.${ext}`, {
               type: `image/${ext}`
             });

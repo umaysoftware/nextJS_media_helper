@@ -15,7 +15,7 @@ export interface SelectionFile {
  * Dosya seçim kurallarını tanımlayan interface
  * Her bir kural opsiyoneldir ve ihtiyaca göre kullanılabilir
  */
-interface RuleInfo {
+export interface RuleInfo {
   // Genel dosya kuralları
   allowedMimeTypes?: string[];  // İzin verilen MIME tipleri
   minSelectionCount?: number;   // Minimum seçilmesi gereken dosya sayısı
@@ -55,7 +55,7 @@ export interface SelectionOptions {
   willGenerateBase64?: boolean; // Base64 formatında string üretilecek mi
   willGenerateBlob?: boolean;   // Blob objesi üretilecek mi
   willGenerateFile?: boolean;   // File objesi üretilecek mi (default: true)
-  rules?: RuleInfo;             // Uygulanacak kurallar
+  rules?: RuleInfo | RuleInfo[]; // Tek bir kural veya kural dizisi
 }
 
 /**

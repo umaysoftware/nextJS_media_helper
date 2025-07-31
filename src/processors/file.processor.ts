@@ -1,10 +1,12 @@
-import { SelectionOptions, ProcessedFile } from '../types';
+import { SelectionOptions, ProcessedFile, RuleInfo } from '../types';
 import { 
   selectFiles, 
   validateFileSize, 
   validateMimeType, 
   createProcessedFile,
-  isBrowser 
+  isBrowser,
+  getMatchingRule,
+  mergeRules
 } from '../utils/common.utils';
 
 export class FileProcessor {
@@ -23,23 +25,34 @@ export class FileProcessor {
     const processedFiles: ProcessedFile[] = [];
     const errors: string[] = [];
 
-    // Validate selection count
-    if (options.rules?.minSelectionCount && fileArray.length < options.rules.minSelectionCount) {
-      throw new Error(`Minimum ${options.rules.minSelectionCount} files must be selected`);
+    // Get merged rules if array, or single rule
+    let globalRules: RuleInfo | undefined;
+    if (Array.isArray(options.rules)) {
+      globalRules = mergeRules(options.rules);
+    } else {
+      globalRules = options.rules;
     }
 
-    if (options.rules?.maxSelectionCount && fileArray.length > options.rules.maxSelectionCount) {
-      throw new Error(`Maximum ${options.rules.maxSelectionCount} files can be selected`);
+    // Validate selection count using global rules
+    if (globalRules?.minSelectionCount && fileArray.length < globalRules.minSelectionCount) {
+      throw new Error(`Minimum ${globalRules.minSelectionCount} files must be selected`);
+    }
+
+    if (globalRules?.maxSelectionCount && fileArray.length > globalRules.maxSelectionCount) {
+      throw new Error(`Maximum ${globalRules.maxSelectionCount} files can be selected`);
     }
 
     // Process each file
     for (const file of fileArray) {
       try {
+        // Get matching rule for this specific file
+        const fileRule = getMatchingRule(file, options.rules) || globalRules;
+
         // Validate file size
         const sizeValidation = validateFileSize(
           file,
-          options.rules?.minFileSize,
-          options.rules?.maxFileSize
+          fileRule?.minFileSize,
+          fileRule?.maxFileSize
         );
 
         if (!sizeValidation.valid) {
@@ -50,7 +63,7 @@ export class FileProcessor {
         // Validate MIME type
         const mimeValidation = validateMimeType(
           file.type,
-          options.rules?.allowedMimeTypes
+          fileRule?.allowedMimeTypes
         );
 
         if (!mimeValidation.valid) {
@@ -81,9 +94,18 @@ export class FileProcessor {
     options: SelectionOptions,
     accept?: string
   ): Promise<ProcessedFile[]> {
+    // Get max selection count from rules
+    let maxSelectionCount: number | undefined;
+    if (Array.isArray(options.rules)) {
+      const merged = mergeRules(options.rules);
+      maxSelectionCount = merged.maxSelectionCount;
+    } else {
+      maxSelectionCount = options.rules?.maxSelectionCount;
+    }
+
     const files = await selectFiles(
       accept,
-      options.rules?.maxSelectionCount !== 1
+      maxSelectionCount !== 1
     );
 
     if (!files) {

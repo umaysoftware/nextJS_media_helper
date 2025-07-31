@@ -214,6 +214,121 @@ const handleFilePick = async () => {
 };
 ```
 
+### 5.1 Çoklu Kural Kullanımı (Array Rules)
+
+```typescript
+const handleMultiRulePick = async () => {
+  const options: SelectionOptions = {
+    willGenerateFile: true,
+    willGenerateBase64: true,
+    willGenerateBlob: false,
+    rules: [
+      // Resimler için kurallar
+      {
+        allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
+        maxFileSize: 5 * 1024 * 1024, // 5MB
+        imageCompression: 'high',
+        imageResolution: 'high',
+        thumbnailSize: 'medium',
+        thumbnailFormat: 'webp'
+      },
+      // Videolar için kurallar
+      {
+        allowedMimeTypes: ['video/mp4', 'video/webm'],
+        maxFileSize: 100 * 1024 * 1024, // 100MB
+        videoDurationLimit: 300, // 5 dakika
+        videoResolution: 'high',
+        thumbnailSize: 'large'
+      },
+      // PDF dosyaları için kurallar
+      {
+        allowedMimeTypes: ['application/pdf'],
+        maxFileSize: 20 * 1024 * 1024, // 20MB
+        minFileSize: 100 * 1024 // 100KB
+      }
+    ]
+  };
+
+  try {
+    const files = await MediaHelper.pickFile(options);
+    
+    files.forEach(file => {
+      console.log(`${file.name} (${file.mimeType})`);
+      
+      if (file.mimeType.startsWith('image/')) {
+        console.log('Resim dosyası - sıkıştırma uygulandı');
+      } else if (file.mimeType.startsWith('video/')) {
+        console.log('Video dosyası - süre limiti kontrol edildi');
+      } else if (file.mimeType === 'application/pdf') {
+        console.log('PDF dosyası');
+      }
+      
+      if (file.thumbnail) {
+        console.log('Thumbnail oluşturuldu');
+      }
+    });
+  } catch (error) {
+    console.error('Dosya seçimi hatası:', error);
+  }
+};
+```
+
+### 5.2 Karma Medya Seçimi
+
+```typescript
+const handleMixedMediaPick = async () => {
+  const options: SelectionOptions = {
+    willGenerateBase64: false,
+    willGenerateBlob: true,
+    rules: [
+      // Sosyal medya için resim kuralları
+      {
+        allowedMimeTypes: ['image/jpeg', 'image/png'],
+        maxFileSize: 10 * 1024 * 1024, // 10MB
+        imageAspectRatio: 'square', // Instagram gibi
+        imageResolution: 'high',
+        thumbnailSize: 'small'
+      },
+      // Hikaye videoları için kurallar
+      {
+        allowedMimeTypes: ['video/mp4'],
+        maxFileSize: 50 * 1024 * 1024, // 50MB
+        videoDurationLimit: 60, // 1 dakika
+        videoResolution: 'medium',
+        thumbnailSize: 'medium'
+      },
+      // Ses dosyaları için kurallar
+      {
+        allowedMimeTypes: ['audio/mp3', 'audio/wav'],
+        maxFileSize: 15 * 1024 * 1024, // 15MB
+        audioDurationLimit: 180, // 3 dakika
+        audioSampleRate: 'high',
+        thumbnailSize: 'small' // Waveform
+      }
+    ]
+  };
+
+  try {
+    const files = await MediaHelper.pickFile(options);
+    console.log(`${files.length} dosya seçildi`);
+    
+    // Dosyaları türlerine göre grupla
+    const grouped = files.reduce((acc, file) => {
+      const type = file.type;
+      if (!acc[type]) acc[type] = [];
+      acc[type].push(file);
+      return acc;
+    }, {} as Record<string, ProcessedFile[]>);
+    
+    Object.entries(grouped).forEach(([type, files]) => {
+      console.log(`${type}: ${files.length} dosya`);
+    });
+  } catch (error) {
+    console.error('Hata:', error);
+  }
+};
+```
+
 ### 6. React/Next.js Component Örneği
 
 ```tsx
@@ -397,7 +512,8 @@ try {
 import type { 
   SelectionOptions, 
   ProcessedFile, 
-  SelectionFile 
+  SelectionFile,
+  RuleInfo 
 } from 'nextjs-media-helper';
 
 // Component props
@@ -412,6 +528,30 @@ interface MediaState {
   loading: boolean;
   error: string | null;
 }
+
+// Çoklu kural tanımlama
+const multiRules: RuleInfo[] = [
+  {
+    allowedMimeTypes: ['image/jpeg', 'image/png'],
+    maxFileSize: 5 * 1024 * 1024,
+    imageCompression: 'medium'
+  },
+  {
+    allowedMimeTypes: ['video/mp4'],
+    maxFileSize: 100 * 1024 * 1024,
+    videoDurationLimit: 300
+  }
+];
+
+// Tek kural tanımlama
+const singleRule: RuleInfo = {
+  allowedMimeTypes: ['application/pdf'],
+  maxFileSize: 10 * 1024 * 1024
+};
+
+// Her iki kullanım da geçerli
+const options1: SelectionOptions = { rules: singleRule };
+const options2: SelectionOptions = { rules: multiRules };
 ```
 
 ## Notlar
@@ -421,3 +561,5 @@ interface MediaState {
 - Thumbnail oluşturma işlemi ek süre alabilir
 - Dosya boyutu limitleri byte cinsinden belirtilmelidir
 - MIME type kontrolü tarayıcı tarafından yapılır, güvenlik için sunucu tarafında da kontrol edilmelidir
+- Rules array kullanıldığında, her dosya kendi MIME tipine uygun kuralla eşleştirilir
+- Birden fazla kural aynı MIME tipini içeriyorsa, ilk eşleşen kural kullanılır
