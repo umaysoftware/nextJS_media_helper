@@ -1,18 +1,20 @@
 import imageCompression from 'browser-image-compression';
 import { ProcessedFile } from '../types';
-import { ImageMimeTypes } from '../types';
-
+import { ImageMimeTypes } from '@/types/image';
+import { PreviewImageOptions } from '@/types/image';
+import { ThumbnailFile } from '@/types/common';
 
 
 const isImageFile = (file: File): boolean => {
   return file.type.startsWith('image/');
 }
 
+
 const compressImage = async (file: File, compressQuality: number): Promise<File> => {
 
 }
 
-const generateThumbnail = async (file: File, options: any): Promise<File> => {
+const generateThumbnail = async (file: File, options: PreviewImageOptions): Promise<ThumbnailFile> => {
   // Implement image thumbnail generation logic here
 }
 
