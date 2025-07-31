@@ -78,7 +78,18 @@ export interface RuleInfo {
     compressQuality?: number; // Sıkıştırma kalitesi (0-100 arası, resimler video ve ses dosyaları için)
 }
 
+export interface ProgressInfo {
+    currentFile: number; // Şu anki dosya indexi
+    totalFiles: number; // Toplam dosya sayısı
+    fileName: string; // İşlenen dosya adı
+    stage: 'validating' | 'compressing' | 'generating-thumbnail' | 'processing' | 'completed'; // İşlem aşaması
+    percentage: number; // Genel ilerleme yüzdesi (0-100)
+}
+
+export type ProgressCallback = (progress: ProgressInfo) => void;
+
 export interface SelectionOptions {
     rules?: RuleInfo[]; // Tek bir kural veya kural dizisi
+    onProgress?: ProgressCallback; // İlerleme callback'i
 }
 

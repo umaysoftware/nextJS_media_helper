@@ -148,7 +148,20 @@ const processDocumentFiles = async (files: File[], options?: SelectionOptions): 
     const documentRule = options?.rules?.find(rule => rule.type === RuleType.DOCUMENT) ||
         options?.rules?.find(rule => rule.type === RuleType.GENERIC);
 
-    for (const file of files) {
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        // Progress callback - validating stage
+        if (options?.onProgress) {
+            options.onProgress({
+                currentFile: i + 1,
+                totalFiles: files.length,
+                fileName: file.name,
+                stage: 'validating',
+                percentage: Math.round(((i) / files.length) * 100)
+            });
+        }
+        
         if (!isDocumentFile(file)) {
             throw new Error(`File ${file.name} is not a valid document file`);
         }
@@ -186,6 +199,17 @@ const processDocumentFiles = async (files: File[], options?: SelectionOptions): 
             processedMainFile.url = URL.createObjectURL(processedMainFile.blob || processedMainFile.file);
         }
 
+        // Progress callback - generating thumbnail stage
+        if (options?.onProgress) {
+            options.onProgress({
+                currentFile: i + 1,
+                totalFiles: files.length,
+                fileName: file.name,
+                stage: 'generating-thumbnail',
+                percentage: Math.round(((i + 0.75) / files.length) * 100)
+            });
+        }
+        
         // Always generate a thumbnail for documents
         thumbnailFile = await generateDocumentThumbnail(file);
 
@@ -201,6 +225,17 @@ const processDocumentFiles = async (files: File[], options?: SelectionOptions): 
             processed: processedMainFile,
             thumbnail: thumbnailFile
         });
+        
+        // Progress callback - completed stage
+        if (options?.onProgress) {
+            options.onProgress({
+                currentFile: i + 1,
+                totalFiles: files.length,
+                fileName: file.name,
+                stage: 'completed',
+                percentage: Math.round(((i + 1) / files.length) * 100)
+            });
+        }
     }
 
     if (documentRule?.minSelectionCount && processedFiles.length < documentRule.minSelectionCount) {

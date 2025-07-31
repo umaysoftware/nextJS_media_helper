@@ -290,8 +290,20 @@ const processVideoFiles = async (files: File[], options?: SelectionOptions): Pro
     
     console.log('Video rule found:', videoRule);
 
-    for (const file of files) {
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
         console.log('Processing video file:', file.name);
+        
+        // Progress callback - validating stage
+        if (options?.onProgress) {
+            options.onProgress({
+                currentFile: i + 1,
+                totalFiles: files.length,
+                fileName: file.name,
+                stage: 'validating',
+                percentage: Math.round(((i) / files.length) * 100)
+            });
+        }
         if (!isVideoFile(file)) {
             throw new Error(`File ${file.name} is not a valid video file`);
         }
@@ -314,6 +326,18 @@ const processVideoFiles = async (files: File[], options?: SelectionOptions): Pro
         let processedVideo = file;
         if (videoRule?.compressQuality && videoRule.compressQuality < 100) {
             console.log('Compression requested with quality:', videoRule.compressQuality);
+            
+            // Progress callback - compressing stage
+            if (options?.onProgress) {
+                options.onProgress({
+                    currentFile: i + 1,
+                    totalFiles: files.length,
+                    fileName: file.name,
+                    stage: 'compressing',
+                    percentage: Math.round(((i + 0.25) / files.length) * 100)
+                });
+            }
+            
             try {
                 processedVideo = await compressVideo(file, videoRule.compressQuality);
             } catch (error) {
@@ -337,6 +361,17 @@ const processVideoFiles = async (files: File[], options?: SelectionOptions): Pro
             processedMainFile.url = URL.createObjectURL(processedMainFile.blob || processedMainFile.file);
         }
 
+        // Progress callback - generating thumbnail stage
+        if (options?.onProgress) {
+            options.onProgress({
+                currentFile: i + 1,
+                totalFiles: files.length,
+                fileName: file.name,
+                stage: 'generating-thumbnail',
+                percentage: Math.round(((i + 0.75) / files.length) * 100)
+            });
+        }
+        
         const defaultThumbnailOptions: PreviewVideoOptions = {
             startAt: 0,
             duration: 1,
@@ -357,6 +392,17 @@ const processVideoFiles = async (files: File[], options?: SelectionOptions): Pro
             processed: processedMainFile,
             thumbnail: thumbnailFile
         });
+        
+        // Progress callback - completed stage
+        if (options?.onProgress) {
+            options.onProgress({
+                currentFile: i + 1,
+                totalFiles: files.length,
+                fileName: file.name,
+                stage: 'completed',
+                percentage: Math.round(((i + 1) / files.length) * 100)
+            });
+        }
     }
 
     if (videoRule?.minSelectionCount && processedFiles.length < videoRule.minSelectionCount) {

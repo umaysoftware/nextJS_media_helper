@@ -149,7 +149,20 @@ const processArchiveFiles = async (files: File[], options?: SelectionOptions): P
     const archiveRule = options?.rules?.find(rule => rule.type === RuleType.ARCHIVE) ||
         options?.rules?.find(rule => rule.type === RuleType.GENERIC);
 
-    for (const file of files) {
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        // Progress callback - validating stage
+        if (options?.onProgress) {
+            options.onProgress({
+                currentFile: i + 1,
+                totalFiles: files.length,
+                fileName: file.name,
+                stage: 'validating',
+                percentage: Math.round(((i) / files.length) * 100)
+            });
+        }
+        
         if (!isArchiveFile(file)) {
             throw new Error(`File ${file.name} is not a valid archive file`);
         }
@@ -187,6 +200,17 @@ const processArchiveFiles = async (files: File[], options?: SelectionOptions): P
             processedMainFile.url = URL.createObjectURL(processedMainFile.blob || processedMainFile.file);
         }
 
+        // Progress callback - generating thumbnail stage
+        if (options?.onProgress) {
+            options.onProgress({
+                currentFile: i + 1,
+                totalFiles: files.length,
+                fileName: file.name,
+                stage: 'generating-thumbnail',
+                percentage: Math.round(((i + 0.75) / files.length) * 100)
+            });
+        }
+        
         // Always generate a thumbnail for archives
         thumbnailFile = await generateArchiveThumbnail(file);
 
@@ -202,6 +226,17 @@ const processArchiveFiles = async (files: File[], options?: SelectionOptions): P
             processed: processedMainFile,
             thumbnail: thumbnailFile
         });
+        
+        // Progress callback - completed stage
+        if (options?.onProgress) {
+            options.onProgress({
+                currentFile: i + 1,
+                totalFiles: files.length,
+                fileName: file.name,
+                stage: 'completed',
+                percentage: Math.round(((i + 1) / files.length) * 100)
+            });
+        }
     }
 
     if (archiveRule?.minSelectionCount && processedFiles.length < archiveRule.minSelectionCount) {

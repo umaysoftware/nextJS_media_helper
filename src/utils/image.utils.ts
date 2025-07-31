@@ -241,7 +241,20 @@ const processImageFile = async (files: File[], options?: SelectionOptions): Prom
     const imageRule = options?.rules?.find(rule => rule.type === RuleType.IMAGE) ||
         options?.rules?.find(rule => rule.type === RuleType.GENERIC);
 
-    for (const file of files) {
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        // Progress callback - validating stage
+        if (options?.onProgress) {
+            options.onProgress({
+                currentFile: i + 1,
+                totalFiles: files.length,
+                fileName: file.name,
+                stage: 'validating',
+                percentage: Math.round(((i) / files.length) * 100)
+            });
+        }
+        
         if (!isImageFile(file)) {
             throw new Error(`File ${file.name} is not a valid image file`);
         }
@@ -263,6 +276,16 @@ const processImageFile = async (files: File[], options?: SelectionOptions): Prom
 
         let processedImage = file;
         if (imageRule?.compressQuality && imageRule.compressQuality < 100) {
+            // Progress callback - compressing stage
+            if (options?.onProgress) {
+                options.onProgress({
+                    currentFile: i + 1,
+                    totalFiles: files.length,
+                    fileName: file.name,
+                    stage: 'compressing',
+                    percentage: Math.round(((i + 0.25) / files.length) * 100)
+                });
+            }
             processedImage = await compressImage(file, imageRule.compressQuality);
         }
 
@@ -281,6 +304,17 @@ const processImageFile = async (files: File[], options?: SelectionOptions): Prom
             processedMainFile.url = URL.createObjectURL(processedMainFile.blob || processedMainFile.file);
         }
 
+        // Progress callback - generating thumbnail stage
+        if (options?.onProgress) {
+            options.onProgress({
+                currentFile: i + 1,
+                totalFiles: files.length,
+                fileName: file.name,
+                stage: 'generating-thumbnail',
+                percentage: Math.round(((i + 0.75) / files.length) * 100)
+            });
+        }
+        
         const defaultThumbnailOptions: PreviewImageOptions = {
             width: 200,
             height: 200,
@@ -301,6 +335,17 @@ const processImageFile = async (files: File[], options?: SelectionOptions): Prom
             processed: processedMainFile,
             thumbnail: thumbnailFile
         });
+        
+        // Progress callback - completed stage
+        if (options?.onProgress) {
+            options.onProgress({
+                currentFile: i + 1,
+                totalFiles: files.length,
+                fileName: file.name,
+                stage: 'completed',
+                percentage: Math.round(((i + 1) / files.length) * 100)
+            });
+        }
     }
 
     if (imageRule?.minSelectionCount && processedFiles.length < imageRule.minSelectionCount) {
