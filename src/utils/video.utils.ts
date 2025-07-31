@@ -2,7 +2,7 @@ import { FFmpeg } from '@ffmpeg/ffmpeg';
 import imageCompression from 'browser-image-compression';
 import { ProcessedFile } from '@/types/common';
 import { VideoMimeTypes } from '@/types/video';
-import { ThumbnailFile } from '@/types/common';
+import { ThumbnailFile, SelectionOptions } from '@/types/common';
 
 
 const isVideoFile = (file: File): boolean => {
@@ -22,5 +22,11 @@ const cropVideo = async (file: File, cropOptions: any): Promise<File> => {
 }
 
 const covertVideoFormat = async (file: File, format: VideoMimeTypes): Promise<File> => {
+
+}
+
+
+
+const processVideoFile = async (file: File, options: SelectionOptions): Promise<ProcessedFile> => {
 
 }

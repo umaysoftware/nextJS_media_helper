@@ -2,6 +2,7 @@ import { FFmpeg } from '@ffmpeg/ffmpeg';
 import imageCompression from 'browser-image-compression';
 import { AudioMimeTypes, PreviewAudioOptions } from '@/types/audio';
 import { ThumbnailFile } from '@/types/common';
+import { ProcessedFile, SelectionOptions } from '@/types/common';
 
 
 
@@ -23,4 +24,10 @@ const cropAudio = async (file: File, cropOptions: any): Promise<File> => {
 
 const convertAudioFormat = async (file: File, format: AudioMimeTypes): Promise<any> => {
     // Implement audio format conversion logic here
+}
+
+
+
+const processAudioFile = async (file: File, options: SelectionOptions): Promise<ProcessedFile> => {
+
 }

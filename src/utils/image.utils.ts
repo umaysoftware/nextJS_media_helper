@@ -1,8 +1,8 @@
 import imageCompression from 'browser-image-compression';
-import { ProcessedFile } from '../types';
 import { ImageMimeTypes } from '@/types/image';
 import { PreviewImageOptions } from '@/types/image';
 import { ThumbnailFile } from '@/types/common';
+import { SelectionOptions, ProcessedFile } from '@/types/common';
 
 
 const isImageFile = (file: File): boolean => {
@@ -24,4 +24,10 @@ const cropImage = async (file: File, cropOptions: any): Promise<File> => {
 
 const convertImageFormat = async (file: File, format: ImageMimeTypes): Promise<any> => {
   // Implement image format conversion logic here
+}
+
+
+
+const processImageFile = async (file: File, options: SelectionOptions): Promise<ProcessedFile> => {
+
 }
