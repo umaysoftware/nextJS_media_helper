@@ -8,12 +8,22 @@ let ffmpeg: FFmpeg | null = null;
 
 const initFFmpeg = async (): Promise<FFmpeg> => {
     if (!ffmpeg) {
-        ffmpeg = new FFmpeg();
-        const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
-        await ffmpeg.load({
-            coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-            wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-        });
+        try {
+            console.log('Initializing FFmpeg...');
+            ffmpeg = new FFmpeg();
+            ffmpeg.on('log', ({ message }) => {
+                console.log('FFmpeg log:', message);
+            });
+            const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+            await ffmpeg.load({
+                coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+                wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+            });
+            console.log('FFmpeg initialized successfully');
+        } catch (error) {
+            console.error('Failed to initialize FFmpeg:', error);
+            throw error;
+        }
     }
     return ffmpeg;
 };
@@ -61,32 +71,43 @@ const isVideoFile = (file: File): boolean => {
 };
 
 const compressVideo = async (file: File, compressQuality: number): Promise<File> => {
-    const ffmpeg = await initFFmpeg();
-    const inputName = 'input.' + file.name.split('.').pop();
-    const outputName = 'output.mp4';
+    try {
+        console.log('Starting video compression...', { fileName: file.name, quality: compressQuality });
+        const ffmpeg = await initFFmpeg();
+        const inputName = 'input.' + file.name.split('.').pop();
+        const outputName = 'output.mp4';
 
-    await ffmpeg.writeFile(inputName, await fetchFile(file));
+        console.log('Writing file to FFmpeg...');
+        await ffmpeg.writeFile(inputName, await fetchFile(file));
 
-    const crf = Math.round(51 - (compressQuality / 100) * 28);
+        const crf = Math.round(51 - (compressQuality / 100) * 28);
 
-    await ffmpeg.exec([
-        '-i', inputName,
-        '-c:v', 'libx264',
-        '-crf', crf.toString(),
-        '-preset', 'medium',
-        '-c:a', 'aac',
-        '-b:a', '128k',
-        '-movflags', '+faststart',
-        outputName
-    ]);
+        console.log('Executing FFmpeg compression with CRF:', crf);
+        await ffmpeg.exec([
+            '-i', inputName,
+            '-c:v', 'libx264',
+            '-crf', crf.toString(),
+            '-preset', 'medium',
+            '-c:a', 'aac',
+            '-b:a', '128k',
+            '-movflags', '+faststart',
+            outputName
+        ]);
 
-    const data = await ffmpeg.readFile(outputName);
-    const blob = new Blob([data], { type: VideoMimeTypes.MP4 });
+        console.log('Reading compressed file...');
+        const data = await ffmpeg.readFile(outputName);
+        const blob = new Blob([data], { type: VideoMimeTypes.MP4 });
 
-    await ffmpeg.deleteFile(inputName);
-    await ffmpeg.deleteFile(outputName);
+        await ffmpeg.deleteFile(inputName);
+        await ffmpeg.deleteFile(outputName);
 
-    return new File([blob], file.name.replace(/\.[^/.]+$/, '.mp4'), { type: VideoMimeTypes.MP4 });
+        console.log('Video compression completed');
+        return new File([blob], file.name.replace(/\.[^/.]+$/, '.mp4'), { type: VideoMimeTypes.MP4 });
+    } catch (error) {
+        console.error('Video compression failed:', error);
+        // Hata durumunda orijinal dosyayı dön
+        return file;
+    }
 };
 
 const generateThumbnail = async (file: File, options: PreviewVideoOptions): Promise<ThumbnailFile> => {
