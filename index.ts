@@ -287,8 +287,5 @@ export { processAudioFiles } from './src/utils/audio.utils';
 export { processDocumentFiles } from './src/utils/document.utils';
 export { processArchiveFiles } from './src/utils/archive.utils';
 
-// Named export
-export { MediaHelper };
-
 // Default export
 export default MediaHelper;
