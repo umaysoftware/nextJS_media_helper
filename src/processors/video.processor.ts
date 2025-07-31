@@ -20,10 +20,15 @@ export class VideoProcessor {
     // Ensure video MIME types are set
     const videoOptions: SelectionOptions = {
       ...options,
-      rules: {
-        ...options.rules,
-        allowedMimeTypes: VIDEO_MIME_TYPES
-      }
+      rules: Array.isArray(options.rules) 
+        ? options.rules.map(rule => ({
+            ...rule,
+            allowedMimeTypes: rule.allowedMimeTypes || VIDEO_MIME_TYPES
+          }))
+        : {
+            ...options.rules,
+            allowedMimeTypes: options.rules?.allowedMimeTypes || VIDEO_MIME_TYPES
+          }
     };
 
     // Use base file processor for initial processing
@@ -64,9 +69,9 @@ export class VideoProcessor {
 
         // Generate thumbnail if requested
         let thumbnail: ProcessedFile | undefined;
-        if (fileRule?.willGenerateThumbnail && fileRule?.thumbnailSize) {
+        if (fileRule?.thumbnailSize) {
           try {
-            const thumbnailBlob = await generateVideoThumbnail(processedFile.file);
+            const thumbnailBlob = await generateVideoThumbnail(processedFile.file, 1);
             const thumbnailFile = new File([thumbnailBlob], `thumb_${processedFile.name}.jpg`, {
               type: 'image/jpeg'
             });

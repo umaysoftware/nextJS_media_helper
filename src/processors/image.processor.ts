@@ -22,10 +22,15 @@ export class ImageProcessor {
     // Ensure image MIME types are set
     const imageOptions: SelectionOptions = {
       ...options,
-      rules: {
-        ...options.rules,
-        allowedMimeTypes: IMAGE_MIME_TYPES
-      }
+      rules: Array.isArray(options.rules) 
+        ? options.rules.map(rule => ({
+            ...rule,
+            allowedMimeTypes: rule.allowedMimeTypes || IMAGE_MIME_TYPES
+          }))
+        : {
+            ...options.rules,
+            allowedMimeTypes: options.rules?.allowedMimeTypes || IMAGE_MIME_TYPES
+          }
     };
 
     // Use base file processor for initial processing
@@ -97,7 +102,7 @@ export class ImageProcessor {
 
         // Generate thumbnail if requested
         let thumbnail: ProcessedFile | undefined;
-        if (fileRule?.willGenerateThumbnail && fileRule?.thumbnailSize) {
+        if (fileRule?.thumbnailSize) {
           try {
             const thumbnailBlob = await generateImageThumbnail(
               processedImageFile,

@@ -19,10 +19,15 @@ export class AudioProcessor {
     // Ensure audio MIME types are set
     const audioOptions: SelectionOptions = {
       ...options,
-      rules: {
-        ...options.rules,
-        allowedMimeTypes: AUDIO_MIME_TYPES
-      }
+      rules: Array.isArray(options.rules) 
+        ? options.rules.map(rule => ({
+            ...rule,
+            allowedMimeTypes: rule.allowedMimeTypes || AUDIO_MIME_TYPES
+          }))
+        : {
+            ...options.rules,
+            allowedMimeTypes: options.rules?.allowedMimeTypes || AUDIO_MIME_TYPES
+          }
     };
 
     // Use base file processor for initial processing
@@ -61,7 +66,7 @@ export class AudioProcessor {
 
         // Generate thumbnail (waveform visualization) if requested
         let thumbnail: ProcessedFile | undefined;
-        if (fileRule?.willGenerateThumbnail && fileRule?.thumbnailSize) {
+        if (fileRule?.thumbnailSize) {
           try {
             const thumbnailSizes = {
               small: { width: 150, height: 75 },

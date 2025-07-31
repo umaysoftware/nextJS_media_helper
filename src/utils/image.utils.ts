@@ -68,7 +68,8 @@ export const resizeImage = (
   file: File,
   maxWidth: number,
   maxHeight: number,
-  quality: number = 0.8
+  quality: number = 0.8,
+  format?: string
 ): Promise<Blob> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -112,7 +113,7 @@ export const resizeImage = (
         } else {
           reject(new Error('Failed to resize image'));
         }
-      }, file.type === 'image/png' ? 'image/png' : 'image/jpeg', quality);
+      }, format || (file.type === 'image/png' ? 'image/png' : 'image/jpeg'), quality);
     };
 
     img.onerror = () => {
@@ -133,7 +134,6 @@ export const generateImageThumbnail = async (
   format: 'jpeg' | 'png' | 'webp' = 'jpeg',
   quality: 'low' | 'medium' | 'high' = 'medium'
 ): Promise<Blob> => {
-  console.log(`Generating thumbnail for ${file.name} with size: ${size}, format: ${format}, quality: ${quality}`);
   const sizes = {
     small: { width: 150, height: 150 },
     medium: { width: 300, height: 300 },
@@ -148,8 +148,9 @@ export const generateImageThumbnail = async (
 
   const { width, height } = sizes[size];
   const qualityValue = qualities[quality];
+  const mimeType = `image/${format}`;
 
-  return resizeImage(file, width, height, qualityValue);
+  return resizeImage(file, width, height, qualityValue, mimeType);
 };
 
 /**
