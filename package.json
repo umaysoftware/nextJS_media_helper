@@ -3,9 +3,19 @@
   "version": "1.0.0",
   "description": "A comprehensive media helper module for ReactJS/NextJS applications",
   "main": "dist/index.js",
+  "module": "dist/esm/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/index.js"
+    }
+  },
   "scripts": {
-    "build": "tsc",
+    "build": "npm run build:cjs && npm run build:esm",
+    "build:cjs": "tsc",
+    "build:esm": "tsc -p tsconfig.esm.json",
     "dev": "tsc --watch",
     "test": "jest",
     "lint": "eslint src --ext .ts,.tsx",
