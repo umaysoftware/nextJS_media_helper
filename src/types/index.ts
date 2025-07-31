@@ -1,3 +1,76 @@
+// ** TYPES ** //
+export enum VideoMimeTypes {
+  MP4 = 'video/mp4',
+  WEBM = 'video/webm',
+  AVI = 'video/x-msvideo',
+  MKV = 'video/x-matroska',
+  MOV = 'video/quicktime',
+  FLV = 'video/x-flv',
+  WMV = 'video/x-ms-wmv',
+  OGG = 'video/ogg',
+  MPEG = 'video/mpeg',
+  TS = 'video/mp2t',
+  M4V = 'video/x-m4v',
+  HLS = 'application/x-mpegURL',
+}
+
+export enum ImageMimeTypes {
+  JPEG = 'image/jpeg',
+  PNG = 'image/png',
+  GIF = 'image/gif',
+  BMP = 'image/bmp',
+  TIFF = 'image/tiff',
+  WEBP = 'image/webp',
+  SVG = 'image/svg+xml',
+  ICO = 'image/x-icon',
+  AVIF = 'image/avif',
+  HEIC = 'image/heic',
+  HEIF = 'image/heif',
+}
+
+export enum AudioMimeTypes {
+  MP3 = 'audio/mpeg',
+  WAV = 'audio/wav',
+  OGG = 'audio/ogg',
+  FLAC = 'audio/flac',
+  AAC = 'audio/aac',
+  M4A = 'audio/mp4',
+  WMA = 'audio/x-ms-wma',
+  AMR = 'audio/amr',
+  AIFF = 'audio/aiff',
+  OPUS = 'audio/opus',
+}
+
+export enum DocumentMimeTypes {
+  PDF = 'application/pdf',
+  DOC = 'application/msword',
+  DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  XLS = 'application/vnd.ms-excel',
+  XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  PPT = 'application/vnd.ms-powerpoint',
+  PPTX = 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  TXT = 'text/plain',
+  CSV = 'text/csv',
+  RTF = 'application/rtf',
+}
+
+export enum AchiveMimeTypes {
+  ZIP = 'application/zip',
+  RAR = 'application/x-rar-compressed',
+  TAR = 'application/x-tar',
+  GZ = 'application/gzip',
+}
+
+
+
+
+export enum FileType {
+  IMAGE = 'image',
+  VIDEO = 'video',
+  AUDIO = 'audio',
+  DOCUMENT = 'document',
+  OTHER = 'other',
+}
 
 /**
  * Seçilen medya dosyasının temel bilgilerini içeren interface
@@ -11,46 +84,25 @@ export interface SelectionFile {
   mimeType: string;  // MIME tipi (örn: "image/jpeg", "video/mp4")
 }
 
+
+// ** RULES TYPES ** //
 /**
  * Dosya seçim kurallarını tanımlayan interface
  * Her bir kural opsiyoneldir ve ihtiyaca göre kullanılabilir
  */
-export interface RuleInfo {
-  willGenerateBase64?: boolean; // Base64 formatında string üretilecek mi
-  willGenerateBlob?: boolean;   // Blob objesi üretilecek mi
-  willGenerateFile?: boolean;   // File objesi üretilecek mi (default: true)
-  willGenerateThumbnail?: boolean; // Thumbnail üretilecek mi
 
-  // Genel dosya kuralları
+export interface RuleBase {
   allowedMimeTypes?: string[];  // İzin verilen MIME tipleri
   minSelectionCount?: number;   // Minimum seçilmesi gereken dosya sayısı
   maxSelectionCount?: number;   // Maximum seçilebilecek dosya sayısı
-  maxFileSize?: number;         // Maximum dosya boyutu (byte)
   minFileSize?: number;         // Minimum dosya boyutu (byte)
+  maxFileSize?: number;         // Maximum dosya boyutu (byte)
+}
 
-  // Video dosyaları için kurallar
-  videoDurationLimit?: number;                      // Maximum video süresi (saniye)
-  videoResolution?: 'low' | 'medium' | 'high';      // Video çözünürlüğü
-  videoBitrate?: 'low' | 'medium' | 'high';         // Video bit hızı
-  videoFrameRate?: 'low' | 'medium' | 'high';       // Video kare hızı
-  videoCompression?: 'low' | 'medium' | 'high';     // Video sıkıştırma seviyesi
 
-  // Ses dosyaları için kurallar
-  audioDurationLimit?: number;                      // Maximum ses süresi (saniye)
-  audioBitrate?: 'low' | 'medium' | 'high';         // Ses bit hızı
-  audioSampleRate?: 'low' | 'medium' | 'high';      // Ses örnekleme hızı
-
-  // Resim dosyaları için kurallar
-  imageResolution?: 'low' | 'medium' | 'high';      // Resim çözünürlüğü
-  imageCompression?: 'low' | 'medium' | 'high';     // Sıkıştırma seviyesi
-  imageColorDepth?: 'low' | 'medium' | 'high';      // Renk derinliği
-  imageAspectRatio?: 'square' | 'landscape' | 'portrait'; // En-boy oranı
-
-  // Thumbnail (küçük resim) için kurallar
-  thumbnailSize?: 'small' | 'medium' | 'large';     // Thumbnail boyutu
-  thumbnailFormat?: 'jpeg' | 'png' | 'webp';        // Thumbnail formatı
-  thumbnailQuality?: 'low' | 'medium' | 'high';     // Thumbnail kalitesi
-  thumbnailAspectRatio?: 'square' | 'landscape' | 'portrait'; // Thumbnail en-boy oranı
+export interface RuleInfo extends RuleBase {
+  willGenerateBase64?: boolean; // Base64 formatında string üretilecek mi
+  willGenerateBlob?: boolean;   // Blob objesi üretilecek mi
 }
 
 /**
@@ -62,7 +114,7 @@ export interface SelectionOptions {
 
 /**
  * İşlenmiş medya dosyası interface'i
- * Seçilen ve işlenen dosyanın tüm bilgilerini içerir
+ * işlenen dosyanın tüm bilgilerini içerir
  */
 export interface ProcessedFile {
   // Temel dosya bilgileri
@@ -73,10 +125,17 @@ export interface ProcessedFile {
   mimeType: string;  // MIME tipi (image/jpeg, video/mp4, vb.)
 
   // Dosya içeriği (farklı formatlarda)
-  file: File;        // Orijinal File objesi (her zaman mevcut)
-  blob?: Blob;       // Blob formatında dosya (opsiyonel)
-  base64?: string;   // Base64 string formatında dosya (opsiyonel)
+  originalFile: File; // Orijinal dosya (her zaman mevcut)
+  processed: {
+    base64?: string; // Base64 formatında string (opsiyonel)
+    blob?: Blob;     // Blob objesi (opsiyonel)
+    file?: File; // İşlenmiş dosya (opsiyonel, örneğin sıkıştırılmış)
+  }
 
   // Thumbnail bilgisi (sadece resimler için)
-  thumbnail?: ProcessedFile; // Küçük resim verisi
+  thumbnail?: {
+    base64?: string; // Base64 formatında string (opsiyonel)
+    blob?: Blob;     // Blob objesi (opsiyonel)
+    file?: File; // İşlenmiş dosya (opsiyonel, örneğin sıkıştırılmış)
+  }
 }
