@@ -1,4 +1,4 @@
-import { ProcessedFile, SelectionFile } from '../types';
+// import { ProcessedFile, SelectionFile } from '../types';
 
 /**
  * Image MIME types
@@ -133,6 +133,7 @@ export const generateImageThumbnail = async (
   format: 'jpeg' | 'png' | 'webp' = 'jpeg',
   quality: 'low' | 'medium' | 'high' = 'medium'
 ): Promise<Blob> => {
+  console.log(`Generating thumbnail for ${file.name} with size: ${size}, format: ${format}, quality: ${quality}`);
   const sizes = {
     small: { width: 150, height: 150 },
     medium: { width: 300, height: 300 },
