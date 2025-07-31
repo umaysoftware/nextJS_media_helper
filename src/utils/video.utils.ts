@@ -72,37 +72,101 @@ const isVideoFile = (file: File): boolean => {
 
 const compressVideo = async (file: File, compressQuality: number): Promise<File> => {
     try {
-        console.log('Starting video compression...', { fileName: file.name, quality: compressQuality });
-        const ffmpeg = await initFFmpeg();
-        const inputName = 'input.' + file.name.split('.').pop();
-        const outputName = 'output.mp4';
-
-        console.log('Writing file to FFmpeg...');
-        await ffmpeg.writeFile(inputName, await fetchFile(file));
-
-        const crf = Math.round(51 - (compressQuality / 100) * 28);
-
-        console.log('Executing FFmpeg compression with CRF:', crf);
-        await ffmpeg.exec([
-            '-i', inputName,
-            '-c:v', 'libx264',
-            '-crf', crf.toString(),
-            '-preset', 'medium',
-            '-c:a', 'aac',
-            '-b:a', '128k',
-            '-movflags', '+faststart',
-            outputName
-        ]);
-
-        console.log('Reading compressed file...');
-        const data = await ffmpeg.readFile(outputName);
-        const blob = new Blob([data], { type: VideoMimeTypes.MP4 });
-
-        await ffmpeg.deleteFile(inputName);
-        await ffmpeg.deleteFile(outputName);
-
-        console.log('Video compression completed');
-        return new File([blob], file.name.replace(/\.[^/.]+$/, '.mp4'), { type: VideoMimeTypes.MP4 });
+        console.log('Starting video compression with MediaRecorder...', { fileName: file.name, quality: compressQuality });
+        
+        // Create a video element to load the file
+        const video = document.createElement('video');
+        video.muted = true;
+        const url = URL.createObjectURL(file);
+        
+        return new Promise((resolve, reject) => {
+            video.onloadedmetadata = async () => {
+                try {
+                    video.play();
+                    
+                    // Create canvas for video rendering
+                    const canvas = document.createElement('canvas');
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    const ctx = canvas.getContext('2d');
+                    
+                    if (!ctx) {
+                        throw new Error('Failed to get canvas context');
+                    }
+                    
+                    // Calculate bitrate based on quality
+                    const baseBitrate = 2500000; // 2.5 Mbps base
+                    const targetBitrate = Math.floor(baseBitrate * (compressQuality / 100));
+                    
+                    // Setup MediaRecorder with WebM format
+                    const stream = canvas.captureStream(30); // 30 fps
+                    
+                    // Add audio track if exists
+                    if (file.type.includes('audio') || (video as any).mozHasAudio || (video as any).webkitAudioDecodedByteCount > 0) {
+                        const audioContext = new AudioContext();
+                        const source = audioContext.createMediaElementSource(video);
+                        const destination = audioContext.createMediaStreamDestination();
+                        source.connect(destination);
+                        source.connect(audioContext.destination);
+                        
+                        const audioTrack = destination.stream.getAudioTracks()[0];
+                        if (audioTrack) {
+                            stream.addTrack(audioTrack);
+                        }
+                    }
+                    
+                    const mediaRecorder = new MediaRecorder(stream, {
+                        mimeType: 'video/webm;codecs=vp9,opus',
+                        videoBitsPerSecond: targetBitrate
+                    });
+                    
+                    const chunks: Blob[] = [];
+                    
+                    mediaRecorder.ondataavailable = (e) => {
+                        if (e.data.size > 0) {
+                            chunks.push(e.data);
+                        }
+                    };
+                    
+                    mediaRecorder.onstop = () => {
+                        URL.revokeObjectURL(url);
+                        const blob = new Blob(chunks, { type: 'video/webm' });
+                        const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, '.webm'), {
+                            type: 'video/webm',
+                            lastModified: Date.now()
+                        });
+                        console.log('Video compression completed');
+                        resolve(compressedFile);
+                    };
+                    
+                    mediaRecorder.start();
+                    
+                    // Draw video frames to canvas
+                    const drawFrame = () => {
+                        if (!video.paused && !video.ended) {
+                            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                            requestAnimationFrame(drawFrame);
+                        } else {
+                            mediaRecorder.stop();
+                        }
+                    };
+                    
+                    drawFrame();
+                    
+                } catch (error) {
+                    URL.revokeObjectURL(url);
+                    reject(error);
+                }
+            };
+            
+            video.onerror = () => {
+                URL.revokeObjectURL(url);
+                reject(new Error('Failed to load video'));
+            };
+            
+            video.src = url;
+        });
+        
     } catch (error) {
         console.error('Video compression failed:', error);
         // Hata durumunda orijinal dosyayı dön
