@@ -24,7 +24,11 @@
     "noFallthroughCasesInSwitch": true,
     "skipLibCheck": true,
     "allowJs": true,
-    "types": ["react", "node"]
+    "types": ["react", "node"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]

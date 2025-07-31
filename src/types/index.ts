@@ -1,63 +1,80 @@
 
-export interface SelectionMediaFile {
-  name: string;
-  size: number;
-  type: string;
-  extension: string;
-  mimeType: string;
+/**
+ * Seçilen medya dosyasının temel bilgilerini içeren interface
+ * Bu interface, dosya seçildikten sonra ilk validasyon için kullanılır
+ */
+export interface SelectionFile {
+  name: string;      // Dosya adı (örn: "photo.jpg")
+  size: number;      // Dosya boyutu (byte cinsinden)
+  type: string;      // Dosya tipi (örn: "image", "video", "audio")
+  extension: string; // Dosya uzantısı (örn: ".jpg", ".mp4")
+  mimeType: string;  // MIME tipi (örn: "image/jpeg", "video/mp4")
 }
 
-export interface RuleInfo {
-  allowedMimeTypes?: string[]; // Allowed MIME types for the files
-  minSelectionCount?: number; // Minimum number of files that must be selected
-  maxSelectionCount?: number; // Maximum number of files that can be selected
-  maxFileSize?: number; // Maximum size of a single file in bytes
-  minFileSize?: number; // Minimum size of a single file in bytes
+/**
+ * Dosya seçim kurallarını tanımlayan interface
+ * Her bir kural opsiyoneldir ve ihtiyaca göre kullanılabilir
+ */
+interface RuleInfo {
+  // Genel dosya kuralları
+  allowedMimeTypes?: string[];  // İzin verilen MIME tipleri
+  minSelectionCount?: number;   // Minimum seçilmesi gereken dosya sayısı
+  maxSelectionCount?: number;   // Maximum seçilebilecek dosya sayısı
+  maxFileSize?: number;         // Maximum dosya boyutu (byte)
+  minFileSize?: number;         // Minimum dosya boyutu (byte)
 
-  // for video files
-  videoDurationLimit?: number; // Maximum duration of video files in seconds
-  videoResolution?: 'low' | 'medium' | 'high'; // Resolution of the video files
-  videoBitrate?: 'low' | 'medium' | 'high'; // Bitrate of the video files
-  videoFrameRate?: 'low' | 'medium' | 'high'; // Frame rate of the video files
+  // Video dosyaları için kurallar
+  videoDurationLimit?: number;                      // Maximum video süresi (saniye)
+  videoResolution?: 'low' | 'medium' | 'high';      // Video çözünürlüğü
+  videoBitrate?: 'low' | 'medium' | 'high';         // Video bit hızı
+  videoFrameRate?: 'low' | 'medium' | 'high';       // Video kare hızı
 
-  // for audio files
-  audioDurationLimit?: number; // Maximum duration of audio files in seconds
-  audioBitrate?: 'low' | 'medium' | 'high'; // Bitrate of the audio files
-  audioSampleRate?: 'low' | 'medium' | 'high'; // Sample rate of the audio files
+  // Ses dosyaları için kurallar
+  audioDurationLimit?: number;                      // Maximum ses süresi (saniye)
+  audioBitrate?: 'low' | 'medium' | 'high';         // Ses bit hızı
+  audioSampleRate?: 'low' | 'medium' | 'high';      // Ses örnekleme hızı
 
-  // for image files
-  imageResolution?: 'low' | 'medium' | 'high'; // Resolution of the image files
-  imageCompression?: 'low' | 'medium' | 'high'; // Compression level of the image files
-  imageColorDepth?: 'low' | 'medium' | 'high'; // Color depth of the image files
-  imageAspectRatio?: 'square' | 'landscape' | 'portrait'; // Aspect ratio of the image files
+  // Resim dosyaları için kurallar
+  imageResolution?: 'low' | 'medium' | 'high';      // Resim çözünürlüğü
+  imageCompression?: 'low' | 'medium' | 'high';     // Sıkıştırma seviyesi
+  imageColorDepth?: 'low' | 'medium' | 'high';      // Renk derinliği
+  imageAspectRatio?: 'square' | 'landscape' | 'portrait'; // En-boy oranı
 
-  // for thubnail files
-  thumbnailSize?: 'small' | 'medium' | 'large'; // Size of the thumbnail files
-  thumbnailFormat?: 'jpeg' | 'png' | 'webp'; // Format of the thumbnail files
-  thumbnailQuality?: 'low' | 'medium' | 'high'; // Quality of the thumbnail files
-  thumbnailAspectRatio?: 'square' | 'landscape' | 'portrait'; // Aspect ratio of the thumbnail files
+  // Thumbnail (küçük resim) için kurallar
+  thumbnailSize?: 'small' | 'medium' | 'large';     // Thumbnail boyutu
+  thumbnailFormat?: 'jpeg' | 'png' | 'webp';        // Thumbnail formatı
+  thumbnailQuality?: 'low' | 'medium' | 'high';     // Thumbnail kalitesi
+  thumbnailAspectRatio?: 'square' | 'landscape' | 'portrait'; // Thumbnail en-boy oranı
 }
 
-export interface SelectionOptionsInfo {
-  willGenerateBase64?: boolean; // Whether to generate Base64 encoded string for the file
-  willGenerateBlob?: boolean; // Whether to generate Blob object for the file
-  willGenerateFile?: boolean; // Whether to generate File object for the file
-  rules?: RuleInfo; // Rules for file selection
+/**
+ * Dosya seçim ve işleme seçenekleri
+ * Hangi formatlarda çıktı üretileceğini belirler
+ */
+export interface SelectionOptions {
+  willGenerateBase64?: boolean; // Base64 formatında string üretilecek mi
+  willGenerateBlob?: boolean;   // Blob objesi üretilecek mi
+  willGenerateFile?: boolean;   // File objesi üretilecek mi (default: true)
+  rules?: RuleInfo;             // Uygulanacak kurallar
 }
 
-export interface ProcessedMediaFile {
-  name: string; // The name of the file
-  size: number; // The size of the file in bytes
-  type: string; // The type of the file (e.g., image, video, audio, document, archive)
-  extension: string; // The file extension (e.g., .jpg, .mp4, .mp3, .pdf, .zip)
-  mimeType: string; // The MIME type of the file (e.g., image/jpeg, video/mp4, audio/mpeg, application/pdf, application/zip)
+/**
+ * İşlenmiş medya dosyası interface'i
+ * Seçilen ve işlenen dosyanın tüm bilgilerini içerir
+ */
+export interface ProcessedFile {
+  // Temel dosya bilgileri
+  name: string;      // Dosya adı
+  size: number;      // Dosya boyutu (byte)
+  type: string;      // Dosya tipi (image, video, audio, document, vb.)
+  extension: string; // Dosya uzantısı (.jpg, .mp4, vb.)
+  mimeType: string;  // MIME tipi (image/jpeg, video/mp4, vb.)
 
-  file: File; // The file as a File object
-  blob?: Blob; // The file as a Blob object
-  base64?: string; // The file as a Base64 encoded string
+  // Dosya içeriği (farklı formatlarda)
+  file: File;        // Orijinal File objesi (her zaman mevcut)
+  blob?: Blob;       // Blob formatında dosya (opsiyonel)
+  base64?: string;   // Base64 string formatında dosya (opsiyonel)
 
-  thumbnail?: ProcessedMediaFile; // Thumbnail for the file, if applicable
+  // Thumbnail bilgisi (sadece resimler için)
+  thumbnail?: ProcessedFile; // Küçük resim verisi
 }
-
-
-
