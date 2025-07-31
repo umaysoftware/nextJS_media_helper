@@ -3,8 +3,7 @@ export enum RuleType {
     VIDEO = "video",       // Video dosyaları için kural
     AUDIO = "audio",       // Ses dosyaları için kural
     DOCUMENT = "document", // Belge dosyaları için kural
-    ARCHIVE = "archive",   // Arşiv dosyaları için kural
-    GENERIC = "generic"    // Genel dosya türleri için kural
+    ARCHIVE = "archive",   // Arşiv dosyaları için kural 
 }
 
 /**

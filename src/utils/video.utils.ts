@@ -188,7 +188,7 @@ const convertVideoFormat = async (file: File, format: VideoMimeTypes): Promise<F
 
 
 
-const processVideoFile = async (files: File[], options?: SelectionOptions): Promise<ProcessedFile[]> => {
+const processVideoFiles = async (files: File[], options?: SelectionOptions): Promise<ProcessedFile[]> => {
     const processedFiles: ProcessedFile[] = [];
 
     const videoRule = options?.rules?.find(rule => rule.type === RuleType.VIDEO) ||
@@ -262,4 +262,4 @@ const processVideoFile = async (files: File[], options?: SelectionOptions): Prom
     return processedFiles;
 };
 
-export { processVideoFile };
+export { processVideoFiles };
