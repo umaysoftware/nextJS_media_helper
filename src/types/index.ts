@@ -33,6 +33,7 @@ export interface RuleInfo {
   videoResolution?: 'low' | 'medium' | 'high';      // Video çözünürlüğü
   videoBitrate?: 'low' | 'medium' | 'high';         // Video bit hızı
   videoFrameRate?: 'low' | 'medium' | 'high';       // Video kare hızı
+  videoCompression?: 'low' | 'medium' | 'high';     // Video sıkıştırma seviyesi
 
   // Ses dosyaları için kurallar
   audioDurationLimit?: number;                      // Maximum ses süresi (saniye)

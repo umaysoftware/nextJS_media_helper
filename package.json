@@ -42,6 +42,8 @@
     "typescript": "^5.3.0"
   },
   "dependencies": {
+    "@ffmpeg/ffmpeg": "^0.12.15",
+    "@ffmpeg/util": "^0.12.2",
     "browser-image-compression": "^2.0.2",
     "file-type": "^18.7.0",
     "image-size": "^1.0.2",

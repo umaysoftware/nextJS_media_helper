@@ -67,14 +67,14 @@ const handleAdvancedImagePick = async () => {
     rules: {
       willGenerateBase64: true,
       willGenerateBlob: true,
-      willGenerateThumbnail: true,
+      willGenerateThumbnail: true, // Thumbnail oluştur
       maxSelectionCount: 5,
       minSelectionCount: 1,
       maxFileSize: 5 * 1024 * 1024, // 5MB
       minFileSize: 10 * 1024, // 10KB
       imageResolution: 'high',
-      imageCompression: 'medium',
-      thumbnailSize: 'medium',
+      imageCompression: 'medium', // browser-image-compression kullanır
+      thumbnailSize: 'medium', // Opsiyonel, willGenerateThumbnail true ise varsayılan 'medium'
       thumbnailFormat: 'jpeg',
       thumbnailQuality: 'high'
     }
@@ -110,12 +110,13 @@ const handleVideoPick = async () => {
     rules: {
       willGenerateBase64: false, // Video için base64 önerilmez
       willGenerateBlob: true,
-      willGenerateThumbnail: true,
+      willGenerateThumbnail: true, // 1. saniyedeki görüntüden thumbnail
       maxSelectionCount: 3,
       maxFileSize: 100 * 1024 * 1024, // 100MB
       videoDurationLimit: 300, // 5 dakika (saniye)
       videoResolution: 'high', // 1920x1080
-      thumbnailSize: 'large'
+      videoCompression: 'medium', // FFmpeg ile video compression
+      thumbnailSize: 'large' // Opsiyonel
     }
   };
 
@@ -579,3 +580,7 @@ const options2: SelectionOptions = { rules: multiRules };
 - MIME type kontrolü tarayıcı tarafından yapılır, güvenlik için sunucu tarafında da kontrol edilmelidir
 - Rules array kullanıldığında, her dosya kendi MIME tipine uygun kuralla eşleştirilir
 - Birden fazla kural aynı MIME tipini içeriyorsa, ilk eşleşen kural kullanılır
+- **Image Compression**: `browser-image-compression` kütüphanesi kullanılır
+- **Video Compression**: FFmpeg.js kullanılır (ilk yüklemede biraz zaman alabilir)
+- `willGenerateThumbnail: true` veya `thumbnailSize` belirtildiğinde thumbnail oluşturulur
+- Video thumbnail'leri varsayılan olarak 1. saniyedeki görüntüden oluşturulur

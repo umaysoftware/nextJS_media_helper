@@ -1,4 +1,6 @@
 // import { ProcessedFile, SelectionFile } from '../types';
+import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { toBlobURL, fetchFile } from '@ffmpeg/util';
 
 /**
  * Video MIME types
@@ -111,6 +113,54 @@ export const generateVideoThumbnail = (file: File, time: number = 1): Promise<Bl
 
     video.src = URL.createObjectURL(file);
   });
+};
+
+/**
+ * Compress video using FFmpeg
+ */
+export const compressVideo = async (
+  file: File,
+  compression: 'low' | 'medium' | 'high' = 'medium'
+): Promise<Blob> => {
+  const ffmpeg = new FFmpeg();
+  
+  try {
+    // Load FFmpeg
+    const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+    await ffmpeg.load({
+      coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+      wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+    });
+
+    // Write input file
+    await ffmpeg.writeFile('input.mp4', await fetchFile(file));
+
+    // Compression settings
+    const compressionSettings = {
+      low: '-crf 35 -preset fast -vf scale=1280:-2',
+      medium: '-crf 28 -preset medium -vf scale=1280:-2',
+      high: '-crf 23 -preset slow -vf scale=1920:-2'
+    };
+
+    // Execute compression
+    await ffmpeg.exec([
+      '-i', 'input.mp4',
+      ...compressionSettings[compression].split(' '),
+      '-c:a', 'aac',
+      '-b:a', '128k',
+      'output.mp4'
+    ]);
+
+    // Read output file
+    const data = await ffmpeg.readFile('output.mp4');
+    const blob = new Blob([data], { type: 'video/mp4' });
+    
+    return blob;
+  } catch (error) {
+    console.error('Video compression failed:', error);
+    // Fallback to original file
+    return file;
+  }
 };
 
 /**

@@ -66,7 +66,7 @@ export class AudioProcessor {
 
         // Generate thumbnail (waveform visualization) if requested
         let thumbnail: ProcessedFile | undefined;
-        if (fileRule?.thumbnailSize) {
+        if (fileRule?.willGenerateThumbnail || fileRule?.thumbnailSize) {
           try {
             const thumbnailSizes = {
               small: { width: 150, height: 75 },
@@ -74,7 +74,7 @@ export class AudioProcessor {
               large: { width: 500, height: 250 }
             };
 
-            const size = thumbnailSizes[fileRule.thumbnailSize];
+            const size = thumbnailSizes[fileRule.thumbnailSize || 'medium'];
             const thumbnailBlob = await generateAudioThumbnail(
               processedFile.file,
               size.width,

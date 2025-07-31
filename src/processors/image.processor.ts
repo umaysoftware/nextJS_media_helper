@@ -102,11 +102,11 @@ export class ImageProcessor {
 
         // Generate thumbnail if requested
         let thumbnail: ProcessedFile | undefined;
-        if (fileRule?.thumbnailSize) {
+        if (fileRule?.willGenerateThumbnail || fileRule?.thumbnailSize) {
           try {
             const thumbnailBlob = await generateImageThumbnail(
               processedImageFile,
-              fileRule.thumbnailSize,
+              fileRule.thumbnailSize || 'medium',
               fileRule.thumbnailFormat || 'jpeg',
               fileRule.thumbnailQuality || 'medium'
             );

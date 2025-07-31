@@ -5,7 +5,8 @@ import {
   validateVideoFile,
   generateVideoThumbnail,
   getVideoDuration,
-  getVideoDimensions
+  getVideoDimensions,
+  compressVideo
 } from '../utils/video.utils';
 import { createProcessedFile, getMatchingRule } from '../utils/common.utils';
 
@@ -67,9 +68,39 @@ export class VideoProcessor {
           continue;
         }
 
+        // Apply compression if specified
+        let processedVideoFile = processedFile.file;
+        if (fileRule?.videoCompression) {
+          try {
+            const compressedBlob = await compressVideo(
+              processedFile.file,
+              fileRule.videoCompression
+            );
+            processedVideoFile = new File([compressedBlob], processedFile.name, {
+              type: processedFile.mimeType
+            });
+            
+            // Update the processed file with compressed version
+            processedFile.file = processedVideoFile;
+            processedFile.size = processedVideoFile.size;
+            
+            // Regenerate base64/blob if needed
+            if (fileRule?.willGenerateBase64 || fileRule?.willGenerateBlob) {
+              const reprocessed = await createProcessedFile(
+                processedVideoFile,
+                fileRule,
+                processedFile.thumbnail
+              );
+              Object.assign(processedFile, reprocessed);
+            }
+          } catch (error) {
+            console.warn('Failed to compress video:', error);
+          }
+        }
+
         // Generate thumbnail if requested
         let thumbnail: ProcessedFile | undefined;
-        if (fileRule?.thumbnailSize) {
+        if (fileRule?.willGenerateThumbnail || fileRule?.thumbnailSize) {
           try {
             const thumbnailBlob = await generateVideoThumbnail(processedFile.file, 1);
             const thumbnailFile = new File([thumbnailBlob], `thumb_${processedFile.name}.jpg`, {

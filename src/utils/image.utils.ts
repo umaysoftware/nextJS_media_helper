@@ -1,4 +1,5 @@
 // import { ProcessedFile, SelectionFile } from '../types';
+import imageCompression from 'browser-image-compression';
 
 /**
  * Image MIME types
@@ -183,16 +184,35 @@ export const compressImage = async (
   file: File,
   compression: 'low' | 'medium' | 'high' = 'medium'
 ): Promise<Blob> => {
-  const compressionLevels = {
-    low: 0.5,
-    medium: 0.7,
-    high: 0.9
+  const compressionOptions = {
+    low: { 
+      maxSizeMB: 2,
+      maxWidthOrHeight: 1920,
+      useWebWorker: true,
+      initialQuality: 0.5
+    },
+    medium: { 
+      maxSizeMB: 1,
+      maxWidthOrHeight: 1920,
+      useWebWorker: true,
+      initialQuality: 0.7
+    },
+    high: { 
+      maxSizeMB: 0.5,
+      maxWidthOrHeight: 1920,
+      useWebWorker: true,
+      initialQuality: 0.85
+    }
   };
 
-  const quality = compressionLevels[compression];
-  const dimensions = await getImageDimensions(file);
-
-  return resizeImage(file, dimensions.width, dimensions.height, quality);
+  try {
+    const compressedFile = await imageCompression(file, compressionOptions[compression]);
+    return compressedFile;
+  } catch (error) {
+    console.error('Image compression failed:', error);
+    // Fallback to original file
+    return file;
+  }
 };
 
 /**
