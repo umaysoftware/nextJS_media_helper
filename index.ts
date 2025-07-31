@@ -1,4 +1,4 @@
-import { SelectionOptions, ProcessedFile, RuleType } from './src/types/common';
+import { SelectionOptions, ProcessedFile, RuleType } from '@/types/common';
 import { processImageFile } from './src/utils/image.utils';
 import { processVideoFiles } from './src/utils/video.utils';
 import { processAudioFiles } from './src/utils/audio.utils';
