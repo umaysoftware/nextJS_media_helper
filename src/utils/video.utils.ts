@@ -218,12 +218,16 @@ const convertVideoFormat = async (file: File, format: VideoMimeTypes): Promise<F
 
 
 const processVideoFiles = async (files: File[], options?: SelectionOptions): Promise<ProcessedFile[]> => {
+    console.log('processVideoFiles started', { filesCount: files.length, options });
     const processedFiles: ProcessedFile[] = [];
 
     const videoRule = options?.rules?.find(rule => rule.type === RuleType.VIDEO) ||
         options?.rules?.find(rule => rule.type === RuleType.GENERIC);
+    
+    console.log('Video rule found:', videoRule);
 
     for (const file of files) {
+        console.log('Processing video file:', file.name);
         if (!isVideoFile(file)) {
             throw new Error(`File ${file.name} is not a valid video file`);
         }
@@ -245,7 +249,13 @@ const processVideoFiles = async (files: File[], options?: SelectionOptions): Pro
 
         let processedVideo = file;
         if (videoRule?.compressQuality && videoRule.compressQuality < 100) {
-            processedVideo = await compressVideo(file, videoRule.compressQuality);
+            console.log('Compression requested with quality:', videoRule.compressQuality);
+            try {
+                processedVideo = await compressVideo(file, videoRule.compressQuality);
+            } catch (error) {
+                console.error('Compression failed, using original file:', error);
+                processedVideo = file;
+            }
         }
 
         if (videoRule?.willGenerateBase64) {
@@ -293,6 +303,7 @@ const processVideoFiles = async (files: File[], options?: SelectionOptions): Pro
         throw new Error(`Maximum ${videoRule.maxSelectionCount} video(s) allowed`);
     }
 
+    console.log('processVideoFiles completed, returning:', processedFiles.length, 'files');
     return processedFiles;
 };
 
