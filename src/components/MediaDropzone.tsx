@@ -129,5 +129,3 @@ export const MediaDropzone: React.FC<MediaDropzoneProps> = ({
         </div>
     );
 };
-
-export default MediaDropzone;
