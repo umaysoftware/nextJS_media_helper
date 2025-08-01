@@ -86,6 +86,12 @@ export interface ProgressInfo {
     percentage: number; // Genel ilerleme yüzdesi (0-100)
 }
 
+export interface FileError {
+    fileName: string;
+    errorCode: string;
+    message: string;
+}
+
 export type ProgressCallback = (progress: ProgressInfo) => void;
 
 export interface SelectionOptions {

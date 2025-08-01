@@ -1,12 +1,12 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { useDropzone, DropzoneOptions, FileRejection } from 'react-dropzone';
-import { SelectionOptions, ProcessedFile, ProgressInfo } from '../types/common';
+import { SelectionOptions, ProcessedFile, ProgressInfo, FileError } from '../types/common';
 import { rulesToDropzoneOptions } from '../utils/dropzone.utils';
 
 export interface MediaDropzoneProps {
     options?: SelectionOptions;
     onFilesProcessed: (files: ProcessedFile[]) => void;
-    onError?: (error: Error) => void;
+    onError?: (errors: FileError[]) => void;
     onProgress?: (progress: ProgressInfo) => void;
     dropzoneOptions?: DropzoneOptions;
     className?: string;
@@ -69,7 +69,13 @@ export const MediaDropzone: React.FC<MediaDropzoneProps> = ({
             onFilesProcessed(processedFiles);
         } catch (error) {
             console.error('Error processing files:', error);
-            onError?.(error as Error);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            const fileErrors: FileError[] = files.map(file => ({
+                fileName: file.name,
+                errorCode: 'PROCESSING_ERROR',
+                message: errorMessage
+            }));
+            onError?.(fileErrors);
         } finally {
             setIsProcessing(false);
             setProgressInfo(null);
@@ -78,10 +84,14 @@ export const MediaDropzone: React.FC<MediaDropzoneProps> = ({
 
     const onDrop = useCallback((acceptedFiles: File[], fileRejections: FileRejection[]) => {
         if (fileRejections.length > 0) {
-            const errors = fileRejections.map(rejection =>
-                `${rejection.file.name}: ${rejection.errors.map(e => e.message).join(', ')}`
-            ).join('\n');
-            onError?.(new Error(errors));
+            const errors: FileError[] = fileRejections.flatMap(rejection => 
+                rejection.errors.map(error => ({
+                    fileName: rejection.file.name,
+                    errorCode: error.code,
+                    message: error.message
+                }))
+            );
+            onError?.(errors);
             return;
         }
 

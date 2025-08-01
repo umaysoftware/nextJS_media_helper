@@ -86,11 +86,11 @@ const files = await MediaHelper.pickWithDropzone({
 
 ```tsx
 import React, { useState } from 'react';
-import { MediaDropzone, ProcessedFile, RuleType } from 'nextjs-media-helper';
+import { MediaDropzone, ProcessedFile, RuleType, FileError } from 'nextjs-media-helper';
 
 const MyComponent: React.FC = () => {
   const [files, setFiles] = useState<ProcessedFile[]>([]);
-  const [error, setError] = useState<string>('');
+  const [errors, setErrors] = useState<FileError[]>([]);
 
   return (
     <MediaDropzone
@@ -105,7 +105,11 @@ const MyComponent: React.FC = () => {
         }
       }}
       onFilesProcessed={setFiles}
-      onError={(err) => setError(err.message)}
+      onError={(errors) => {
+        console.log('Errors:', errors);
+        // errors: [{ fileName: 'test.txt', errorCode: 'file-invalid-type', message: 'File type must be image/jpeg, image/png, image/webp' }]
+        setErrors(errors);
+      }}
       className="border-2 border-dashed border-gray-300 rounded-lg p-8"
       activeClassName="border-blue-500"
       acceptClassName="border-green-500"
@@ -546,6 +550,22 @@ interface ProcessedFile {
   };
 }
 ```
+
+#### FileError Interface
+```typescript
+interface FileError {
+  fileName: string;      // Name of the file that caused the error
+  errorCode: string;     // Error code (e.g., 'file-too-large', 'file-invalid-type')
+  message: string;       // Human-readable error message
+}
+```
+
+Common error codes from react-dropzone:
+- `file-too-large`: File exceeds maxSize
+- `file-too-small`: File is below minSize  
+- `file-invalid-type`: File type not accepted
+- `too-many-files`: Exceeds maxFiles limit
+- `PROCESSING_ERROR`: Custom error during file processing
 
 ## Supported File Types
 

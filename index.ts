@@ -351,11 +351,15 @@ export class MediaHelper {
                                 }
                             };
                             
-                            const handleError = (error: Error) => {
+                            const handleError = (errors: any) => {
                                 if (!hasResolved) {
                                     hasResolved = true;
                                     cleanup();
-                                    reject(error);
+                                    // Convert FileError array to Error for reject
+                                    const errorMessage = Array.isArray(errors) 
+                                        ? errors.map(e => `${e.fileName}: ${e.message}`).join('\n')
+                                        : 'Unknown error';
+                                    reject(new Error(errorMessage));
                                 }
                             };
                             
