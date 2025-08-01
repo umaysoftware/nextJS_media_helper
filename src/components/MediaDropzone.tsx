@@ -15,6 +15,12 @@ export interface MediaDropzoneProps {
     disabledClassName?: string;
     children?: React.ReactNode;
     disabled?: boolean;
+    texts?: {
+        dragActive?: string;
+        dragInactive?: string;
+        processing?: string;
+        error?: string;
+    };
 }
 
 export const MediaDropzone: React.FC<MediaDropzoneProps> = ({
@@ -29,7 +35,13 @@ export const MediaDropzone: React.FC<MediaDropzoneProps> = ({
     rejectClassName = '',
     disabledClassName = '',
     children,
-    disabled = false
+    disabled = false,
+    texts = {
+        dragActive: 'Drop the files here...',
+        dragInactive: 'Drag & drop files here, or click to select files',
+        processing: 'Processing...',
+        error: 'Error occurred'
+    }
 }) => {
     const [isProcessing, setIsProcessing] = useState(false);
     const [progressInfo, setProgressInfo] = useState<ProgressInfo | null>(null);
@@ -100,18 +112,52 @@ export const MediaDropzone: React.FC<MediaDropzoneProps> = ({
             <input {...getInputProps()} />
             
             {isProcessing ? (
-                <div className="dropzone-processing">
+                <div style={{ 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    alignItems: 'center', 
+                    gap: '12px',
+                    padding: '20px'
+                }}>
+                    <div style={{ 
+                        fontSize: '14px', 
+                        color: '#666',
+                        textAlign: 'center'
+                    }}>
+                        {texts.processing || 'Processing...'}
+                        {progressInfo && (
+                            <span style={{ marginLeft: '8px', fontWeight: 'bold' }}>
+                                {progressInfo.currentFile}/{progressInfo.totalFiles}
+                            </span>
+                        )}
+                    </div>
+                    
+                    <div style={{ 
+                        width: '100%', 
+                        maxWidth: '300px',
+                        height: '4px',
+                        backgroundColor: '#e5e7eb',
+                        borderRadius: '9999px',
+                        overflow: 'hidden'
+                    }}>
+                        <div 
+                            style={{ 
+                                width: `${progressInfo?.percentage || 0}%`,
+                                height: '100%',
+                                backgroundColor: '#3b82f6',
+                                borderRadius: '9999px',
+                                transition: 'width 0.3s ease'
+                            }}
+                        />
+                    </div>
+                    
                     {progressInfo && (
-                        <div>
-                            <p>Processing {progressInfo.fileName}</p>
-                            <p>File {progressInfo.currentFile} of {progressInfo.totalFiles}</p>
-                            <p>{progressInfo.stage}</p>
-                            <div className="progress-bar">
-                                <div 
-                                    className="progress-fill" 
-                                    style={{ width: `${progressInfo.percentage}%` }}
-                                />
-                            </div>
+                        <div style={{ 
+                            fontSize: '12px', 
+                            color: '#999',
+                            textAlign: 'center'
+                        }}>
+                            {progressInfo.fileName}
                         </div>
                     )}
                 </div>
@@ -119,9 +165,9 @@ export const MediaDropzone: React.FC<MediaDropzoneProps> = ({
                 children || (
                     <div className="dropzone-content">
                         {isDragActive ? (
-                            <p>Drop the files here...</p>
+                            <p>{texts.dragActive || 'Drop the files here...'}</p>
                         ) : (
-                            <p>Drag & drop files here, or click to select files</p>
+                            <p>{texts.dragInactive || 'Drag & drop files here, or click to select files'}</p>
                         )}
                     </div>
                 )

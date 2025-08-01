@@ -127,6 +127,27 @@ const MyComponent: React.FC = () => {
 };
 ```
 
+### Dropzone with Turkish Texts
+
+```tsx
+<MediaDropzone
+  options={{
+    rules: [{
+      type: RuleType.IMAGE,
+      maxFileSize: 5 * 1024 * 1024
+    }]
+  }}
+  onFilesProcessed={setFiles}
+  texts={{
+    dragActive: 'Dosyaları buraya bırakın...',
+    dragInactive: 'Dosyaları sürükleyin veya seçmek için tıklayın',
+    processing: 'İşleniyor...',
+    error: 'Hata oluştu'
+  }}
+  className="border-2 border-dashed border-gray-300 rounded-lg p-8"
+/>
+```
+
 ### With Validation Rules
 
 ```typescript
