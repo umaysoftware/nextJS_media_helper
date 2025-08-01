@@ -1,6 +1,7 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useDropzone, DropzoneOptions, FileRejection } from 'react-dropzone';
 import { SelectionOptions, ProcessedFile, ProgressInfo } from '../types/common';
+import { rulesToDropzoneOptions } from '../utils/dropzone.utils';
 
 export interface MediaDropzoneProps {
     options?: SelectionOptions;
@@ -53,7 +54,7 @@ export const MediaDropzone: React.FC<MediaDropzoneProps> = ({
         try {
             // Import MediaHelper dynamically to avoid circular dependency
             const { default: MediaHelper } = await import('../../index');
-            
+
             // Create options with progress callback
             const processOptions: SelectionOptions = {
                 ...options,
@@ -77,7 +78,7 @@ export const MediaDropzone: React.FC<MediaDropzoneProps> = ({
 
     const onDrop = useCallback((acceptedFiles: File[], fileRejections: FileRejection[]) => {
         if (fileRejections.length > 0) {
-            const errors = fileRejections.map(rejection => 
+            const errors = fileRejections.map(rejection =>
                 `${rejection.file.name}: ${rejection.errors.map(e => e.message).join(', ')}`
             ).join('\n');
             onError?.(new Error(errors));
@@ -87,17 +88,24 @@ export const MediaDropzone: React.FC<MediaDropzoneProps> = ({
         processFiles(acceptedFiles);
     }, [processFiles, onError]);
 
+    // Merge rule-based options with user-provided dropzone options
+    const computedDropzoneOptions = useMemo(() => {
+        const ruleOptions = rulesToDropzoneOptions(options?.rules);
+        return {
+            ...ruleOptions,
+            ...dropzoneOptions, // User options override rule options
+            onDrop,
+            disabled: disabled || isProcessing
+        };
+    }, [options?.rules, dropzoneOptions, onDrop, disabled, isProcessing]);
+
     const {
         getRootProps,
         getInputProps,
         isDragActive,
         isDragAccept,
         isDragReject
-    } = useDropzone({
-        onDrop,
-        disabled: disabled || isProcessing,
-        ...dropzoneOptions
-    });
+    } = useDropzone(computedDropzoneOptions);
 
     const rootClassName = [
         className,
@@ -110,17 +118,17 @@ export const MediaDropzone: React.FC<MediaDropzoneProps> = ({
     return (
         <div {...getRootProps({ className: rootClassName })}>
             <input {...getInputProps()} />
-            
+
             {isProcessing ? (
-                <div style={{ 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    alignItems: 'center', 
+                <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
                     gap: '12px',
                     padding: '20px'
                 }}>
-                    <div style={{ 
-                        fontSize: '14px', 
+                    <div style={{
+                        fontSize: '14px',
                         color: '#666',
                         textAlign: 'center'
                     }}>
@@ -131,17 +139,17 @@ export const MediaDropzone: React.FC<MediaDropzoneProps> = ({
                             </span>
                         )}
                     </div>
-                    
-                    <div style={{ 
-                        width: '100%', 
+
+                    <div style={{
+                        width: '100%',
                         maxWidth: '300px',
                         height: '4px',
                         backgroundColor: '#e5e7eb',
                         borderRadius: '9999px',
                         overflow: 'hidden'
                     }}>
-                        <div 
-                            style={{ 
+                        <div
+                            style={{
                                 width: `${progressInfo?.percentage || 0}%`,
                                 height: '100%',
                                 backgroundColor: '#3b82f6',
@@ -150,10 +158,10 @@ export const MediaDropzone: React.FC<MediaDropzoneProps> = ({
                             }}
                         />
                     </div>
-                    
+
                     {progressInfo && (
-                        <div style={{ 
-                            fontSize: '12px', 
+                        <div style={{
+                            fontSize: '12px',
                             color: '#999',
                             textAlign: 'center'
                         }}>
