@@ -130,9 +130,16 @@ export class MediaHelper {
     }
 
     /**
+     * Process files directly (public method for external use like dropzone)
+     */
+    static async processFilesDirectly(files: File[], options?: SelectionOptions): Promise<ProcessedFile[]> {
+        return MediaHelper.processFiles(files, options);
+    }
+
+    /**
      * Process files that are already selected (internal use)
      */
-    static async processFiles(files: File[], options?: SelectionOptions): Promise<ProcessedFile[]> {
+    private static async processFiles(files: File[], options?: SelectionOptions): Promise<ProcessedFile[]> {
         if (!files || files.length === 0) {
             throw new Error('No files provided');
         }
@@ -319,6 +326,86 @@ export class MediaHelper {
             }]
         });
     }
+
+    /**
+     * Opens a dropzone modal for file selection with drag & drop support
+     */
+    static async pickWithDropzone(options?: SelectionOptions & { 
+        dropzoneText?: string;
+        dropzoneClassName?: string;
+    }): Promise<ProcessedFile[]> {
+        return new Promise((resolve, reject) => {
+            import('./src/utils/dropzone.utils').then(({ createDropzoneModal, rulesToDropzoneOptions }) => {
+                import('react').then(React => {
+                    import('react-dom/client').then(ReactDOM => {
+                        import('./src/components/MediaDropzone').then(({ MediaDropzone }) => {
+                            const { container, cleanup } = createDropzoneModal();
+                            
+                            let hasResolved = false;
+                            
+                            const handleFilesProcessed = (files: ProcessedFile[]) => {
+                                if (!hasResolved) {
+                                    hasResolved = true;
+                                    cleanup();
+                                    resolve(files);
+                                }
+                            };
+                            
+                            const handleError = (error: Error) => {
+                                if (!hasResolved) {
+                                    hasResolved = true;
+                                    cleanup();
+                                    reject(error);
+                                }
+                            };
+                            
+                            const handleCancel = () => {
+                                if (!hasResolved) {
+                                    hasResolved = true;
+                                    cleanup();
+                                    resolve([]);
+                                }
+                            };
+                            
+                            // Create dropzone options from rules
+                            const dropzoneOptions = rulesToDropzoneOptions(options?.rules);
+                            
+                            // Create React root and render
+                            const root = ReactDOM.createRoot(container);
+                            root.render(
+                                React.createElement(MediaDropzone, {
+                                    options,
+                                    onFilesProcessed: handleFilesProcessed,
+                                    onError: handleError,
+                                    dropzoneOptions,
+                                    className: options?.dropzoneClassName || 'media-helper-dropzone',
+                                    children: React.createElement('div', {
+                                        style: {
+                                            border: '2px dashed #ccc',
+                                            borderRadius: '4px',
+                                            padding: '40px',
+                                            textAlign: 'center',
+                                            cursor: 'pointer',
+                                            minHeight: '200px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center'
+                                        }
+                                    }, options?.dropzoneText || 'Drag & drop files here, or click to select files')
+                                })
+                            );
+                            
+                            // Add close handler to container
+                            const closeBtn = container.querySelector('button');
+                            if (closeBtn) {
+                                closeBtn.addEventListener('click', handleCancel);
+                            }
+                        }).catch(reject);
+                    }).catch(reject);
+                }).catch(reject);
+            }).catch(reject);
+        });
+    }
 }
 
 // Export all types
@@ -335,6 +422,13 @@ export { processVideoFiles } from './src/utils/video.utils';
 export { processAudioFiles } from './src/utils/audio.utils';
 export { processDocumentFiles } from './src/utils/document.utils';
 export { processArchiveFiles } from './src/utils/archive.utils';
+
+// Export React components
+export { MediaDropzone } from './src/components/MediaDropzone';
+export type { MediaDropzoneProps } from './src/components/MediaDropzone';
+
+// Export dropzone utilities
+export { rulesToDropzoneOptions, createDropzoneModal } from './src/utils/dropzone.utils';
 
 // Default export
 export default MediaHelper;

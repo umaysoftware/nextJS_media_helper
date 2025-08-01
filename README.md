@@ -4,7 +4,7 @@ A comprehensive media file processing library for Next.js applications. Features
 
 ## Features
 
-- 🎯 **Native File Selection**: Browser's native file picker integration
+- 🎯 **Multiple Selection Methods**: Native file picker, drag & drop modal, or React component
 - 🎨 **Multi-format Support**: Images, Videos, Audio, Documents, Archives
 - 🔍 **Automatic Type Detection**: Smart file type detection based on MIME types and extensions
 - 📏 **Validation Rules**: File size limits, type restrictions, count constraints
@@ -14,6 +14,7 @@ A comprehensive media file processing library for Next.js applications. Features
 - 📦 **Flexible Output**: Base64, Blob, File objects, and Object URLs
 - ⚡ **Browser-based Processing**: Uses MediaRecorder API for video, FFmpeg.wasm for audio
 - 📊 **Progress Tracking**: Real-time progress callbacks for all operations
+- 🎯 **Drag & Drop Support**: Built-in dropzone functionality with react-dropzone
 
 ## Installation
 
@@ -28,8 +29,15 @@ yarn add nextjs-media-helper
 ```typescript
 import MediaHelper from 'nextjs-media-helper';
 
-// Open native file picker and process selected files
+// Option 1: Native file picker
 const processedFiles = await MediaHelper.pickMixed();
+
+// Option 2: Dropzone modal
+const processedFiles = await MediaHelper.pickWithDropzone();
+
+// Option 3: React component
+import { MediaDropzone } from 'nextjs-media-helper';
+<MediaDropzone onFilesProcessed={(files) => console.log(files)} />
 ```
 
 ## Usage Examples
@@ -47,6 +55,76 @@ const files = await MediaHelper.pickMixed({
   multiple: true,  // Allow multiple file selection
   accept: '.jpg,.png,.mp4,.pdf'  // Custom file types
 });
+```
+
+### Dropzone Modal
+
+```typescript
+import MediaHelper, { RuleType } from 'nextjs-media-helper';
+
+// Open dropzone modal with drag & drop support
+const files = await MediaHelper.pickWithDropzone({
+  dropzoneText: 'Drag your files here or click to browse',
+  rules: [{
+    type: RuleType.IMAGE,
+    maxFileSize: 5 * 1024 * 1024, // 5MB
+    compressQuality: 80
+  }],
+  onProgress: (progress) => {
+    console.log(`${progress.percentage}% - ${progress.stage}`);
+  }
+});
+
+// With custom styling
+const files = await MediaHelper.pickWithDropzone({
+  dropzoneClassName: 'my-custom-dropzone',
+  dropzoneText: 'Drop images here'
+});
+```
+
+### React Dropzone Component
+
+```tsx
+import React, { useState } from 'react';
+import { MediaDropzone, ProcessedFile, RuleType } from 'nextjs-media-helper';
+
+const MyComponent: React.FC = () => {
+  const [files, setFiles] = useState<ProcessedFile[]>([]);
+  const [error, setError] = useState<string>('');
+
+  return (
+    <MediaDropzone
+      options={{
+        rules: [{
+          type: RuleType.IMAGE,
+          maxFileSize: 10 * 1024 * 1024,
+          allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp']
+        }],
+        onProgress: (progress) => {
+          console.log(`Processing: ${progress.percentage}%`);
+        }
+      }}
+      onFilesProcessed={setFiles}
+      onError={(err) => setError(err.message)}
+      className="border-2 border-dashed border-gray-300 rounded-lg p-8"
+      activeClassName="border-blue-500"
+      acceptClassName="border-green-500"
+      rejectClassName="border-red-500"
+    >
+      <div className="text-center">
+        <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+          <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        <p className="mt-2 text-sm text-gray-600">
+          Drop files here or click to select
+        </p>
+        <p className="text-xs text-gray-500">
+          PNG, JPG, WEBP up to 10MB
+        </p>
+      </div>
+    </MediaDropzone>
+  );
+};
 ```
 
 ### With Validation Rules
@@ -325,6 +403,46 @@ Opens file picker filtered for document files only.
 
 ##### `MediaHelper.pickArchives(options?)`
 Opens file picker filtered for archive files only.
+
+##### `MediaHelper.pickWithDropzone(options?)`
+Opens a modal with drag & drop support for file selection.
+
+**Parameters:**
+- `options`: Optional configuration object (extends SelectionOptions)
+  - `dropzoneText`: String - Custom text to display in dropzone
+  - `dropzoneClassName`: String - Custom CSS class for dropzone styling
+  - All SelectionOptions parameters
+
+**Returns:** `Promise<ProcessedFile[]>`
+
+##### `MediaHelper.processFilesDirectly(files, options?)`
+Process files directly without file picker (useful for custom implementations).
+
+**Parameters:**
+- `files`: Array of File objects to process
+- `options`: SelectionOptions object
+
+**Returns:** `Promise<ProcessedFile[]>`
+
+### React Components
+
+#### MediaDropzone
+
+A React component that provides drag & drop file selection with built-in processing.
+
+**Props:**
+- `options?: SelectionOptions` - File processing options
+- `onFilesProcessed: (files: ProcessedFile[]) => void` - Callback when files are processed
+- `onError?: (error: Error) => void` - Error callback
+- `onProgress?: (progress: ProgressInfo) => void` - Progress callback
+- `dropzoneOptions?: DropzoneOptions` - react-dropzone options
+- `className?: string` - CSS class for root element
+- `activeClassName?: string` - CSS class when dragging
+- `acceptClassName?: string` - CSS class when file will be accepted
+- `rejectClassName?: string` - CSS class when file will be rejected
+- `disabledClassName?: string` - CSS class when disabled
+- `children?: React.ReactNode` - Custom content
+- `disabled?: boolean` - Disable the dropzone
 
 ### Individual Processors
 
