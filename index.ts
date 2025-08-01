@@ -40,7 +40,7 @@ export class MediaHelper {
         // Validate each group
         for (const [fileType, groupFiles] of fileGroups) {
             const typeRule = options?.rules?.find(rule => rule.type === fileType) || genericRule;
-            
+
             if (!typeRule) continue;
 
             // Check count constraints for this type
@@ -132,7 +132,7 @@ export class MediaHelper {
     /**
      * Process files that are already selected (internal use)
      */
-    private static async processFiles(files: File[], options?: SelectionOptions): Promise<ProcessedFile[]> {
+    static async processFiles(files: File[], options?: SelectionOptions): Promise<ProcessedFile[]> {
         if (!files || files.length === 0) {
             throw new Error('No files provided');
         }
