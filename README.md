@@ -560,12 +560,15 @@ interface FileError {
 }
 ```
 
-Common error codes from react-dropzone:
+Common error codes:
 - `file-too-large`: File exceeds maxSize
 - `file-too-small`: File is below minSize  
 - `file-invalid-type`: File type not accepted
 - `too-many-files`: Exceeds maxFiles limit
-- `PROCESSING_ERROR`: Custom error during file processing
+- `too-few-files`: Below minimum file count
+- `unknown-file-type`: Unable to detect file type
+- `processing-error`: Error during file processing
+- `PROCESSING_ERROR`: Custom error during file processing (from dropzone)
 
 ## Supported File Types
 

@@ -1,4 +1,4 @@
-import { SelectionOptions, ProcessedFile, RuleType } from './src/types/common';
+import { SelectionOptions, ProcessedFile, RuleType, FileError } from './src/types/common';
 import { processImageFile } from './src/utils/image.utils';
 import { processVideoFiles } from './src/utils/video.utils';
 import { processAudioFiles } from './src/utils/audio.utils';
@@ -18,24 +18,37 @@ export class MediaHelper {
     /**
      * Pre-validate files before processing
      */
-    private static validateFiles(files: File[], options?: SelectionOptions): void {
+    private static validateFiles(files: File[], options?: SelectionOptions): FileError[] {
+        const errors: FileError[] = [];
         if (!files || files.length === 0) {
-            return;
+            return errors;
         }
 
         // Check GENERIC rule constraints first
         const genericRule = options?.rules?.find(rule => rule.type === RuleType.GENERIC);
         if (genericRule) {
             if (genericRule.minSelectionCount && files.length < genericRule.minSelectionCount) {
-                throw new Error(`Minimum ${genericRule.minSelectionCount} file(s) required`);
+                files.forEach(file => {
+                    errors.push({
+                        fileName: file.name,
+                        errorCode: 'too-few-files',
+                        message: `Minimum ${genericRule.minSelectionCount} file(s) required`
+                    });
+                });
             }
             if (genericRule.maxSelectionCount && files.length > genericRule.maxSelectionCount) {
-                throw new Error(`Maximum ${genericRule.maxSelectionCount} file(s) allowed`);
+                files.forEach(file => {
+                    errors.push({
+                        fileName: file.name,
+                        errorCode: 'too-many-files',
+                        message: `Maximum ${genericRule.maxSelectionCount} file(s) allowed`
+                    });
+                });
             }
         }
 
         // Group files by type for type-specific validation
-        const fileGroups = MediaHelper.groupFilesByType(files);
+        const { groups: fileGroups } = MediaHelper.groupFilesByType(files);
 
         // Validate each group
         for (const [fileType, groupFiles] of fileGroups) {
@@ -46,10 +59,22 @@ export class MediaHelper {
             // Check count constraints for this type
             if (typeRule.type !== RuleType.GENERIC) {
                 if (typeRule.minSelectionCount && groupFiles.length < typeRule.minSelectionCount) {
-                    throw new Error(`Minimum ${typeRule.minSelectionCount} ${fileType} file(s) required`);
+                    groupFiles.forEach((file: File) => {
+                        errors.push({
+                            fileName: file.name,
+                            errorCode: 'too-few-files',
+                            message: `Minimum ${typeRule.minSelectionCount} ${fileType} file(s) required`
+                        });
+                    });
                 }
                 if (typeRule.maxSelectionCount && groupFiles.length > typeRule.maxSelectionCount) {
-                    throw new Error(`Maximum ${typeRule.maxSelectionCount} ${fileType} file(s) allowed`);
+                    groupFiles.forEach((file: File) => {
+                        errors.push({
+                            fileName: file.name,
+                            errorCode: 'too-many-files',
+                            message: `Maximum ${typeRule.maxSelectionCount} ${fileType} file(s) allowed`
+                        });
+                    });
                 }
             }
 
@@ -57,24 +82,38 @@ export class MediaHelper {
             for (const file of groupFiles) {
                 // Check MIME type
                 if (typeRule.allowedMimeTypes && !typeRule.allowedMimeTypes.includes(file.type)) {
-                    throw new Error(`File type ${file.type} is not allowed for ${file.name}`);
+                    errors.push({
+                        fileName: file.name,
+                        errorCode: 'file-invalid-type',
+                        message: `File type ${file.type} is not allowed for ${file.name}`
+                    });
                 }
 
                 // Check file size
                 if (typeRule.minFileSize && file.size < typeRule.minFileSize) {
-                    throw new Error(`File ${file.name} is too small. Minimum size: ${typeRule.minFileSize} bytes`);
+                    errors.push({
+                        fileName: file.name,
+                        errorCode: 'file-too-small',
+                        message: `File ${file.name} is too small. Minimum size: ${typeRule.minFileSize} bytes`
+                    });
                 }
                 if (typeRule.maxFileSize && file.size > typeRule.maxFileSize) {
-                    throw new Error(`File ${file.name} is too large. Maximum size: ${typeRule.maxFileSize} bytes`);
+                    errors.push({
+                        fileName: file.name,
+                        errorCode: 'file-too-large',
+                        message: `File ${file.name} is too large. Maximum size: ${typeRule.maxFileSize} bytes`
+                    });
                 }
             }
         }
+        
+        return errors;
     }
 
     /**
      * Detects the file type based on MIME type and file extension
      */
-    private static detectFileType(file: File): RuleType {
+    private static detectFileType(file: File): RuleType | null {
         const mimeType = file.type.toLowerCase();
         const extension = file.name.split('.').pop()?.toLowerCase() || '';
 
@@ -104,29 +143,34 @@ export class MediaHelper {
             return RuleType.ARCHIVE;
         }
 
-        // If no specific type detected, treat as generic
-        throw new Error(`Unable to detect file type for ${file.name}`);
+        // If no specific type detected, return null to handle in groupFilesByType
+        return null;
     }
 
     /**
      * Groups files by their detected type
      */
-    private static groupFilesByType(files: File[]): Map<RuleType, File[]> {
+    private static groupFilesByType(files: File[]): { groups: Map<RuleType, File[]>, errors: FileError[] } {
         const fileGroups = new Map<RuleType, File[]>();
+        const errors: FileError[] = [];
 
         for (const file of files) {
-            try {
-                const fileType = MediaHelper.detectFileType(file);
-                const group = fileGroups.get(fileType) || [];
-                group.push(file);
-                fileGroups.set(fileType, group);
-            } catch (error) {
-                console.error(`Error detecting file type for ${file.name}:`, error);
-                throw error;
+            const fileType = MediaHelper.detectFileType(file);
+            if (fileType === null) {
+                errors.push({
+                    fileName: file.name,
+                    errorCode: 'unknown-file-type',
+                    message: `Unable to detect file type for ${file.name}`
+                });
+                continue;
             }
+            
+            const group = fileGroups.get(fileType) || [];
+            group.push(file);
+            fileGroups.set(fileType, group);
         }
 
-        return fileGroups;
+        return { groups: fileGroups, errors };
     }
 
     /**
@@ -145,10 +189,24 @@ export class MediaHelper {
         }
 
         // Validate all files first before processing
-        MediaHelper.validateFiles(files, options);
+        const validationErrors = MediaHelper.validateFiles(files, options);
+        if (validationErrors.length > 0) {
+            // Convert FileError array to Error message
+            const errorMessage = validationErrors
+                .map(e => `${e.fileName}: ${e.message}`)
+                .join('\n');
+            throw new Error(errorMessage);
+        }
 
         const allProcessedFiles: ProcessedFile[] = [];
-        const fileGroups = MediaHelper.groupFilesByType(files);
+        const { groups: fileGroups, errors: groupingErrors } = MediaHelper.groupFilesByType(files);
+        
+        if (groupingErrors.length > 0) {
+            const errorMessage = groupingErrors
+                .map(e => `${e.fileName}: ${e.message}`)
+                .join('\n');
+            throw new Error(errorMessage);
+        }
 
         // Process each group of files
         for (const [fileType, groupFiles] of fileGroups) {
@@ -183,7 +241,17 @@ export class MediaHelper {
                 allProcessedFiles.push(...processedFiles);
             } catch (error) {
                 console.error(`Error processing ${fileType} files:`, error);
-                throw error;
+                // Convert error to FileError array format for consistency
+                const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                const fileErrors: FileError[] = groupFiles.map(file => ({
+                    fileName: file.name,
+                    errorCode: 'processing-error',
+                    message: errorMessage
+                }));
+                const formattedError = fileErrors
+                    .map(e => `${e.fileName}: ${e.message}`)
+                    .join('\n');
+                throw new Error(formattedError);
             }
         }
 
