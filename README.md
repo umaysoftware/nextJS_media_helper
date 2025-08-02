@@ -152,6 +152,33 @@ const MyComponent: React.FC = () => {
 />
 ```
 
+### Dropzone with Icon and Description
+
+```tsx
+<MediaDropzone
+  options={{
+    rules: [{
+      type: RuleType.IMAGE,
+      maxFileSize: 10 * 1024 * 1024
+    }]
+  }}
+  onFilesProcessed={setFiles}
+  icon={
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+    </svg>
+  }
+  texts={{
+    dragActive: 'Drop your images here...',
+    dragInactive: 'Drag & drop images here, or click to browse',
+    subDesc: 'Support for JPG, PNG, WEBP up to 10MB',
+    processing: 'Processing images...'
+  }}
+  className="border-2 border-dashed border-gray-300 rounded-lg"
+/>
+```
+
 ### With Validation Rules
 
 ```typescript
@@ -468,6 +495,13 @@ A React component that provides drag & drop file selection with built-in process
 - `disabledClassName?: string` - CSS class when disabled
 - `children?: React.ReactNode` - Custom content
 - `disabled?: boolean` - Disable the dropzone
+- `texts?: object` - Custom text labels
+  - `dragActive?: string` - Text shown when dragging files over dropzone
+  - `dragInactive?: string` - Text shown in default state  
+  - `processing?: string` - Text shown while processing files
+  - `error?: string` - Text shown when error occurs
+  - `subDesc?: string` - Subtitle/description text shown below the main text
+- `icon?: React.ReactNode` - React node to display as icon above the text
 
 ### Individual Processors
 

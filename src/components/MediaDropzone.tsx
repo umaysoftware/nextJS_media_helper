@@ -21,7 +21,9 @@ export interface MediaDropzoneProps {
         dragInactive?: string;
         processing?: string;
         error?: string;
+        subDesc?: string;
     };
+    icon?: React.ReactNode;
 }
 
 export const MediaDropzone: React.FC<MediaDropzoneProps> = ({
@@ -41,8 +43,10 @@ export const MediaDropzone: React.FC<MediaDropzoneProps> = ({
         dragActive: 'Drop the files here...',
         dragInactive: 'Drag & drop files here, or click to select files',
         processing: 'Processing...',
-        error: 'Error occurred'
-    }
+        error: 'Error occurred',
+        subDesc: ''
+    },
+    icon
 }) => {
     const [isProcessing, setIsProcessing] = useState(false);
     const [progressInfo, setProgressInfo] = useState<ProgressInfo | null>(null);
@@ -181,11 +185,42 @@ export const MediaDropzone: React.FC<MediaDropzoneProps> = ({
                 </div>
             ) : (
                 children || (
-                    <div className="dropzone-content">
-                        {isDragActive ? (
-                            <p>{texts.dragActive || 'Drop the files here...'}</p>
-                        ) : (
-                            <p>{texts.dragInactive || 'Drag & drop files here, or click to select files'}</p>
+                    <div className="dropzone-content" style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '12px',
+                        padding: '40px 20px',
+                        textAlign: 'center'
+                    }}>
+                        {icon && (
+                            <div style={{
+                                fontSize: '48px',
+                                color: '#9ca3af',
+                                marginBottom: '8px'
+                            }}>
+                                {icon}
+                            </div>
+                        )}
+                        
+                        <p style={{
+                            margin: 0,
+                            fontSize: '16px',
+                            color: '#374151',
+                            fontWeight: 500
+                        }}>
+                            {isDragActive ? texts.dragActive : texts.dragInactive}
+                        </p>
+                        
+                        {texts.subDesc && (
+                            <p style={{
+                                margin: 0,
+                                fontSize: '14px',
+                                color: '#6b7280',
+                                maxWidth: '400px'
+                            }}>
+                                {texts.subDesc}
+                            </p>
                         )}
                     </div>
                 )
