@@ -33,6 +33,7 @@ export interface ExportedFile {
 
 
 export interface ProcessedFile {
+    processType: 'processed'; // Dosyanın işlenme durumu
     // Temel dosya bilgileri
     meta: {
         name: string;      // Dosya adı (örn: "photo.jpg")
@@ -53,9 +54,31 @@ export interface ProcessedFile {
 }
 
 
+export interface UnProcessedFile {
+    processType: 'unprocessed'; // Dosyanın işlenme durumu
+    // Temel dosya bilgileri
+    meta: {
+        name: string;      // Dosya adı (örn: "photo.jpg")  
+        size: number;      // Dosya boyutu (byte cinsinden)
+        type: string;      // Dosya tipi (örn: "image", "video", "audio")
+        extension: string; // Dosya uzantısı (örn: ".jpg", ".mp4")
+        mimeType: string;  // MIME tipi (örn: "image/jpeg", "video/mp4") 
+    },
+
+    // Orijinal dosya içeriği
+    originalFile: File; // Orijinal dosya (her zaman mevcut)
+
+    reason: {
+        fileName: string;
+        errorCode: string;
+        message: string;
+    }
+}
+
+
 // *** RULE TYPES *** //
 export interface RuleInfo {
-    allowedMimeTypes?: string[];  // İzin verilen MIME tipleri
+    allowedMimeTypes?: string[];  // İzin verilen MIME tipleri image/*, video/*, audio/* gibi ifadeleride destekler
     minSelectionCount?: number;   // Minimum seçilmesi gereken dosya sayısı
     maxSelectionCount?: number;   // Maximum seçilebilecek dosya sayısı
     minFileSize?: number;         // Minimum dosya boyutu (byte)
@@ -63,7 +86,12 @@ export interface RuleInfo {
 
     willGenerateBase64?: boolean; // bu dosya için Base64 formatında string üretilecek mi
     willGenerateBlob?: boolean;   // bu dosya için Blob objesi üretilecek mi
-    compressQuality?: number; // Sıkıştırma kalitesi (0-100 arası, resimler video ve ses dosyaları için)
+
+    // processedCompressQuality?: number; // Sıkıştırma kalitesi (0-100 arası, resimler video ve ses dosyaları için)
+    // processedFormat?: 'jpeg' | 'png' | 'webp'; // Thumbnail formatı (varsayılan webp, resimler için)
+
+    // thumbnailCompressQuality?: number; // Thumbnail sıkıştırma kalitesi (0-100 arası, resimler için)
+    // thumbnailFormat?: 'jpeg' | 'png' | 'webp'; // Thumbnail formatı (varsayılan webp, resimler için)
 }
 
 export interface ProgressInfo {

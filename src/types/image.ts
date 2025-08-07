@@ -1,21 +1,9 @@
-export enum ImageMimeTypes {
-    JPEG = 'image/jpeg',
-    PNG = 'image/png',
-    GIF = 'image/gif',
-    BMP = 'image/bmp',
-    TIFF = 'image/tiff',
-    WEBP = 'image/webp',
-    SVG = 'image/svg+xml',
-    ICO = 'image/x-icon',
-    AVIF = 'image/avif',
-    HEIC = 'image/heic',
-    HEIF = 'image/heif',
-}
+import { RuleInfo } from './common';
 
-export interface PreviewImageOptions {
-    width: number;  // Thumbnail genişliği
-    height: number; // Thumbnail yüksekliği
+export interface ImageRuleInfo extends RuleInfo {
+    processedCompressQuality: number; // Sıkıştırma kalitesi (0-100 arası, varsayılan 75)
+    processedFormat: 'jpeg' | 'png' | 'webp'; // Dönüştürme formatı (varsayılan 'webp')
 
-    compressQuality?: number; // Sıkıştırma kalitesi (0-100 arası, varsayılan 75)
-    format?: 'jpeg' | 'png' | 'webp'; // Thumbnail formatı (varsayılan webp)
+    thumbnailCompressQuality: number; // Thumbnail sıkıştırma kalitesi (0-100 arası, ses dosyaları için için)
+    thumbnailFormat: 'jpeg' | 'png' | 'webp'; // Thumbnail formatı (varsayılan 'webp', ses dosyaları için)
 }

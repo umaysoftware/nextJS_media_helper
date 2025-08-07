@@ -1,22 +1,12 @@
-export enum VideoMimeTypes {
-    MP4 = 'video/mp4',
-    WEBM = 'video/webm',
-    AVI = 'video/x-msvideo',
-    MKV = 'video/x-matroska',
-    MOV = 'video/quicktime',
-    FLV = 'video/x-flv',
-    WMV = 'video/x-ms-wmv',
-    OGG = 'video/ogg',
-    MPEG = 'video/mpeg',
-    TS = 'video/mp2t',
-    M4V = 'video/x-m4v',
-    HLS = 'application/x-mpegURL',
-}
+import { RuleInfo } from './common';
 
-export interface PreviewVideoOptions {
+export interface VideoRuleInfo extends RuleInfo {
     startAt: number; // Başlangıç zamanı (saniye cinsinden)
-    duration: number; // Süre (saniye cinsinden)
+    duration: number; // Süre (saniye cinsinden) 
 
-    compressQuality?: number; // Sıkıştırma kalitesi (0-100 arası, varsayılan 75)
-    format?: 'jpeg' | 'png' | 'webp'; // Thumbnail formatı (varsayılan webp)
+    processedCompressQuality?: number; // Sıkıştırma kalitesi (0-100 arası, varsayılan 75)
+    processedFormat?: 'mp4' | 'webm' | 'avi'; // Dönüştürme formatı (varsayılan 'mp4')
+
+    thumbnailCompressQuality?: number; // Thumbnail sıkıştırma kalitesi (0-100 arası, ses dosyaları için için)
+    thumbnailFormat?: 'mp4' | 'webm' | 'avi'; // Thumbnail formatı (varsayılan 'mp4', ses dosyaları için)
 }
