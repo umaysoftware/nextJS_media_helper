@@ -1,12 +1,10 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { useDropzone, DropzoneOptions, FileRejection } from 'react-dropzone';
-import { SelectionOptions, ProcessedFile, ProgressInfo, FileError } from '../types/common';
-import { rulesToDropzoneOptions } from '../utils/dropzone.utils';
+import { SelectionOptions, ProcessedFile, UnProcessedFile, ProgressInfo, FileError } from '../types/common';
 
 export interface MediaDropzoneProps {
     options?: SelectionOptions;
-    onFilesProcessed: (files: ProcessedFile[]) => void;
-    onError?: (errors: FileError[]) => void;
+    onFilesProcessed: (files: (ProcessedFile | UnProcessedFile)[]) => void;
     onProgress?: (progress: ProgressInfo) => void;
     dropzoneOptions?: DropzoneOptions;
     className?: string;
@@ -70,6 +68,14 @@ export const MediaDropzone: React.FC<MediaDropzoneProps> = ({
 
             // Process files using MediaHelper
             const processedFiles = await MediaHelper.processFilesDirectly(files, processOptions);
+
+            // Separate processed and unprocessed files for error reporting
+            const unprocessedFiles = processedFiles.filter(f => f.processType === 'unprocessed') as UnProcessedFile[];
+            if (unprocessedFiles.length > 0 && onError) {
+                const errors = unprocessedFiles.map(f => f.reason);
+                onError(errors);
+            }
+
             onFilesProcessed(processedFiles);
         } catch (error) {
             console.error('Error processing files:', error);
@@ -88,7 +94,7 @@ export const MediaDropzone: React.FC<MediaDropzoneProps> = ({
 
     const onDrop = useCallback((acceptedFiles: File[], fileRejections: FileRejection[]) => {
         if (fileRejections.length > 0) {
-            const errors: FileError[] = fileRejections.flatMap(rejection => 
+            const errors: FileError[] = fileRejections.flatMap(rejection =>
                 rejection.errors.map(error => ({
                     fileName: rejection.file.name,
                     errorCode: error.code,
@@ -102,14 +108,54 @@ export const MediaDropzone: React.FC<MediaDropzoneProps> = ({
         processFiles(acceptedFiles);
     }, [processFiles, onError]);
 
-    // Merge rule-based options with user-provided dropzone options
+    // Create dropzone options based on rules
     const computedDropzoneOptions = useMemo(() => {
-        const ruleOptions = rulesToDropzoneOptions(options?.rules);
-        return {
-            ...ruleOptions,
-            ...dropzoneOptions, // User options override rule options
+        const opts: DropzoneOptions = {
             onDrop,
             disabled: disabled || isProcessing
+        };
+
+        // If rules are provided, configure accept and file size
+        if (options?.rules?.[0]) {
+            const rule = options.rules[0];
+
+            // Set accepted file types
+            if (rule.allowedMimeTypes) {
+                const accept: Record<string, string[]> = {};
+                rule.allowedMimeTypes.forEach(mimeType => {
+                    if (mimeType.endsWith('/*')) {
+                        // Handle wildcards like 'image/*'
+                        accept[mimeType] = [];
+                    } else {
+                        // Group by MIME type category
+                        const category = mimeType.split('/')[0] + '/*';
+                        if (!accept[category]) {
+                            accept[category] = [];
+                        }
+                        accept[category].push('.' + mimeType.split('/')[1]);
+                    }
+                });
+                opts.accept = accept;
+            }
+
+            // Set file size limits
+            if (rule.maxFileSize) {
+                opts.maxSize = rule.maxFileSize;
+            }
+            if (rule.minFileSize) {
+                opts.minSize = rule.minFileSize;
+            }
+
+            // Set file count limits
+            if (rule.maxSelectionCount) {
+                opts.maxFiles = rule.maxSelectionCount;
+            }
+        }
+
+        // User options override computed options
+        return {
+            ...opts,
+            ...dropzoneOptions
         };
     }, [options?.rules, dropzoneOptions, onDrop, disabled, isProcessing]);
 
@@ -202,7 +248,7 @@ export const MediaDropzone: React.FC<MediaDropzoneProps> = ({
                                 {icon}
                             </div>
                         )}
-                        
+
                         <p style={{
                             margin: 0,
                             fontSize: '16px',
@@ -211,7 +257,7 @@ export const MediaDropzone: React.FC<MediaDropzoneProps> = ({
                         }}>
                             {isDragActive ? texts.dragActive : texts.dragInactive}
                         </p>
-                        
+
                         {texts.subDesc && (
                             <p style={{
                                 margin: 0,

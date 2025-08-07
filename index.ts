@@ -1,486 +1,345 @@
-import { SelectionOptions, ProcessedFile, RuleType, FileError } from './src/types/common';
-import { processImageFile } from './src/utils/image.utils';
-import { processVideoFiles } from './src/utils/video.utils';
-import { processAudioFiles } from './src/utils/audio.utils';
-import { processDocumentFiles } from './src/utils/document.utils';
-import { processArchiveFiles } from './src/utils/archive.utils';
-
-import { ImageMimeTypes } from './src/types/image';
-import { VideoMimeTypes } from './src/types/video';
-import { AudioMimeTypes } from './src/types/audio';
-import { DocumentMimeTypes } from './src/types/document';
-import { AchiveMimeTypes } from './src/types/archive';
+import { 
+    SelectionOptions, 
+    ProcessedFile, 
+    UnProcessedFile,
+    FileError,
+    RuleInfo,
+    ExportedFile
+} from './src/types/common';
 
 /**
  * MediaHelper class with native file selection and processing
  */
 export class MediaHelper {
     /**
-     * Pre-validate files before processing
+     * Detect file type based on MIME type and extension
      */
-    private static validateFiles(files: File[], options?: SelectionOptions): FileError[] {
-        const errors: FileError[] = [];
-        if (!files || files.length === 0) {
-            return errors;
-        }
-
-        // Check GENERIC rule constraints first
-        const genericRule = options?.rules?.find(rule => rule.type === RuleType.GENERIC);
-        if (genericRule) {
-            if (genericRule.minSelectionCount && files.length < genericRule.minSelectionCount) {
-                files.forEach(file => {
-                    errors.push({
-                        fileName: file.name,
-                        errorCode: 'too-few-files',
-                        message: `Minimum ${genericRule.minSelectionCount} file(s) required`
-                    });
-                });
-            }
-            if (genericRule.maxSelectionCount && files.length > genericRule.maxSelectionCount) {
-                files.forEach(file => {
-                    errors.push({
-                        fileName: file.name,
-                        errorCode: 'too-many-files',
-                        message: `Maximum ${genericRule.maxSelectionCount} file(s) allowed`
-                    });
-                });
-            }
-        }
-
-        // Group files by type for type-specific validation
-        const { groups: fileGroups } = MediaHelper.groupFilesByType(files);
-
-        // Validate each group
-        for (const [fileType, groupFiles] of fileGroups) {
-            const typeRule = options?.rules?.find(rule => rule.type === fileType) || genericRule;
-
-            if (!typeRule) continue;
-
-            // Check count constraints for this type
-            if (typeRule.type !== RuleType.GENERIC) {
-                if (typeRule.minSelectionCount && groupFiles.length < typeRule.minSelectionCount) {
-                    groupFiles.forEach((file: File) => {
-                        errors.push({
-                            fileName: file.name,
-                            errorCode: 'too-few-files',
-                            message: `Minimum ${typeRule.minSelectionCount} ${fileType} file(s) required`
-                        });
-                    });
-                }
-                if (typeRule.maxSelectionCount && groupFiles.length > typeRule.maxSelectionCount) {
-                    groupFiles.forEach((file: File) => {
-                        errors.push({
-                            fileName: file.name,
-                            errorCode: 'too-many-files',
-                            message: `Maximum ${typeRule.maxSelectionCount} ${fileType} file(s) allowed`
-                        });
-                    });
-                }
-            }
-
-            // Validate each file
-            for (const file of groupFiles) {
-                // Check MIME type
-                if (typeRule.allowedMimeTypes && !typeRule.allowedMimeTypes.includes(file.type)) {
-                    errors.push({
-                        fileName: file.name,
-                        errorCode: 'file-invalid-type',
-                        message: `File type ${file.type} is not allowed for ${file.name}`
-                    });
-                }
-
-                // Check file size
-                if (typeRule.minFileSize && file.size < typeRule.minFileSize) {
-                    errors.push({
-                        fileName: file.name,
-                        errorCode: 'file-too-small',
-                        message: `File ${file.name} is too small. Minimum size: ${typeRule.minFileSize} bytes`
-                    });
-                }
-                if (typeRule.maxFileSize && file.size > typeRule.maxFileSize) {
-                    errors.push({
-                        fileName: file.name,
-                        errorCode: 'file-too-large',
-                        message: `File ${file.name} is too large. Maximum size: ${typeRule.maxFileSize} bytes`
-                    });
-                }
-            }
-        }
-        
-        return errors;
-    }
-
-    /**
-     * Detects the file type based on MIME type and file extension
-     */
-    private static detectFileType(file: File): RuleType | null {
+    private static detectFileType(file: File): string {
         const mimeType = file.type.toLowerCase();
         const extension = file.name.split('.').pop()?.toLowerCase() || '';
 
         // Check by MIME type first
-        if (mimeType.startsWith('image/') || Object.values(ImageMimeTypes).includes(file.type as ImageMimeTypes)) {
-            return RuleType.IMAGE;
-        }
-
-        if (mimeType.startsWith('video/') || Object.values(VideoMimeTypes).includes(file.type as VideoMimeTypes)) {
-            return RuleType.VIDEO;
-        }
-
-        if (mimeType.startsWith('audio/') || Object.values(AudioMimeTypes).includes(file.type as AudioMimeTypes)) {
-            return RuleType.AUDIO;
-        }
-
-        if (Object.values(DocumentMimeTypes).includes(file.type as DocumentMimeTypes) ||
-            mimeType.startsWith('application/pdf') ||
+        if (mimeType.startsWith('image/')) return 'image';
+        if (mimeType.startsWith('video/')) return 'video';
+        if (mimeType.startsWith('audio/')) return 'audio';
+        if (mimeType.startsWith('application/pdf') || 
             mimeType.startsWith('application/msword') ||
             mimeType.startsWith('application/vnd.') ||
-            mimeType.startsWith('text/')) {
-            return RuleType.DOCUMENT;
+            mimeType.startsWith('text/')) return 'document';
+        
+        // Check by extension as fallback
+        if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'tiff', 'avif', 'heic', 'heif'].includes(extension)) {
+            return 'image';
+        }
+        if (['mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv', 'webm', 'm4v', 'mpg', 'mpeg', '3gp'].includes(extension)) {
+            return 'video';
+        }
+        if (['mp3', 'wav', 'ogg', 'aac', 'flac', 'wma', 'm4a', 'opus', 'aiff'].includes(extension)) {
+            return 'audio';
+        }
+        if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'rtf', 'odt'].includes(extension)) {
+            return 'document';
+        }
+        if (['zip', 'rar', 'tar', 'gz', '7z'].includes(extension)) {
+            return 'archive';
         }
 
-        if (Object.values(AchiveMimeTypes).includes(file.type as AchiveMimeTypes) ||
-            ['zip', 'rar', 'tar', 'gz', '7z'].includes(extension)) {
-            return RuleType.ARCHIVE;
+        return 'unknown';
+    }
+
+    /**
+     * Check if MIME type matches the allowed patterns (supports wildcards like image/*)
+     */
+    private static matchesMimeType(fileMimeType: string, allowedMimeTypes: string[]): boolean {
+        return allowedMimeTypes.some(allowed => {
+            if (allowed.endsWith('/*')) {
+                const prefix = allowed.slice(0, -2);
+                return fileMimeType.startsWith(prefix + '/');
+            }
+            return fileMimeType === allowed;
+        });
+    }
+
+    /**
+     * Validate a single file against rules
+     */
+    private static validateFile(file: File, rules?: RuleInfo): FileError | null {
+        if (!rules) return null;
+
+        // Check MIME type
+        if (rules.allowedMimeTypes && !this.matchesMimeType(file.type, rules.allowedMimeTypes)) {
+            return {
+                fileName: file.name,
+                errorCode: 'file-invalid-type',
+                message: `File type ${file.type} is not allowed`
+            };
         }
 
-        // If no specific type detected, return null to handle in groupFilesByType
+        // Check file size
+        if (rules.minFileSize && file.size < rules.minFileSize) {
+            return {
+                fileName: file.name,
+                errorCode: 'file-too-small',
+                message: `File is too small. Minimum size: ${(rules.minFileSize / 1024 / 1024).toFixed(2)} MB`
+            };
+        }
+
+        if (rules.maxFileSize && file.size > rules.maxFileSize) {
+            return {
+                fileName: file.name,
+                errorCode: 'file-too-large',
+                message: `File is too large. Maximum size: ${(rules.maxFileSize / 1024 / 1024).toFixed(2)} MB`
+            };
+        }
+
         return null;
     }
 
     /**
-     * Groups files by their detected type
+     * Process a single file
      */
-    private static groupFilesByType(files: File[]): { groups: Map<RuleType, File[]>, errors: FileError[] } {
-        const fileGroups = new Map<RuleType, File[]>();
-        const errors: FileError[] = [];
-
-        for (const file of files) {
-            const fileType = MediaHelper.detectFileType(file);
-            if (fileType === null) {
-                errors.push({
-                    fileName: file.name,
-                    errorCode: 'unknown-file-type',
-                    message: `Unable to detect file type for ${file.name}`
-                });
-                continue;
-            }
-            
-            const group = fileGroups.get(fileType) || [];
-            group.push(file);
-            fileGroups.set(fileType, group);
-        }
-
-        return { groups: fileGroups, errors };
-    }
-
-    /**
-     * Process files directly (public method for external use like dropzone)
-     */
-    static async processFilesDirectly(files: File[], options?: SelectionOptions): Promise<ProcessedFile[]> {
-        return MediaHelper.processFiles(files, options);
-    }
-
-    /**
-     * Process files that are already selected (internal use)
-     */
-    private static async processFiles(files: File[], options?: SelectionOptions): Promise<ProcessedFile[]> {
-        if (!files || files.length === 0) {
-            throw new Error('No files provided');
-        }
-
-        // Validate all files first before processing
-        const validationErrors = MediaHelper.validateFiles(files, options);
-        if (validationErrors.length > 0) {
-            // Convert FileError array to Error message
-            const errorMessage = validationErrors
-                .map(e => `${e.fileName}: ${e.message}`)
-                .join('\n');
-            throw new Error(errorMessage);
-        }
-
-        const allProcessedFiles: ProcessedFile[] = [];
-        const { groups: fileGroups, errors: groupingErrors } = MediaHelper.groupFilesByType(files);
+    private static async processFile(
+        file: File, 
+        rules?: RuleInfo,
+        onProgress?: (progress: any) => void,
+        currentIndex?: number,
+        totalFiles?: number
+    ): Promise<ProcessedFile | UnProcessedFile> {
+        const extension = '.' + file.name.split('.').pop()!.toLowerCase();
+        const fileType = this.detectFileType(file);
         
-        if (groupingErrors.length > 0) {
-            const errorMessage = groupingErrors
-                .map(e => `${e.fileName}: ${e.message}`)
-                .join('\n');
-            throw new Error(errorMessage);
+        // Create meta object
+        const meta = {
+            name: file.name,
+            size: file.size,
+            type: fileType,
+            extension,
+            mimeType: file.type
+        };
+
+        // Validate file
+        const validationError = this.validateFile(file, rules);
+        if (validationError) {
+            return {
+                processType: 'unprocessed',
+                meta,
+                originalFile: file,
+                reason: validationError
+            };
         }
 
-        // Process each group of files
-        for (const [fileType, groupFiles] of fileGroups) {
-            try {
-                let processedFiles: ProcessedFile[] = [];
+        try {
+            // Report progress - processing stage
+            if (onProgress && currentIndex !== undefined && totalFiles !== undefined) {
+                onProgress({
+                    currentFile: currentIndex + 1,
+                    totalFiles,
+                    fileName: file.name,
+                    stage: 'processing',
+                    percentage: Math.round(((currentIndex + 0.5) / totalFiles) * 100)
+                });
+            }
 
-                switch (fileType) {
-                    case RuleType.IMAGE:
-                        processedFiles = await processImageFile(groupFiles, options);
-                        break;
+            // Process the file based on type
+            let processed: ExportedFile = {
+                name: file.name,
+                size: file.size,
+                type: fileType,
+                extension,
+                mimeType: file.type
+            };
 
-                    case RuleType.VIDEO:
-                        processedFiles = await processVideoFiles(groupFiles, options);
-                        break;
+            let thumbnail: ExportedFile | undefined;
 
-                    case RuleType.AUDIO:
-                        processedFiles = await processAudioFiles(groupFiles, options);
-                        break;
+            // Generate base64 if requested
+            if (rules?.willGenerateBase64) {
+                processed.base64 = await this.fileToBase64(file);
+            }
 
-                    case RuleType.DOCUMENT:
-                        processedFiles = await processDocumentFiles(groupFiles, options);
-                        break;
+            // Generate blob if requested
+            if (rules?.willGenerateBlob) {
+                processed.blob = new Blob([file], { type: file.type });
+            }
 
-                    case RuleType.ARCHIVE:
-                        processedFiles = await processArchiveFiles(groupFiles, options);
-                        break;
+            // Always include the file
+            processed.file = file;
 
-                    default:
-                        throw new Error(`Unsupported file type: ${fileType}`);
+            // Generate URL if we have blob or file
+            if (processed.blob || processed.file) {
+                processed.url = URL.createObjectURL(processed.blob || processed.file);
+            }
+
+            // Generate thumbnail for images and videos
+            if (fileType === 'image' || fileType === 'video') {
+                // Simple thumbnail generation (you can enhance this)
+                thumbnail = {
+                    name: `thumb_${file.name}`,
+                    size: 0,
+                    type: fileType,
+                    extension,
+                    mimeType: file.type
+                };
+                
+                // For images, we can use the same file as thumbnail for now
+                if (fileType === 'image') {
+                    thumbnail.file = file;
+                    thumbnail.url = URL.createObjectURL(file);
                 }
+            }
 
-                allProcessedFiles.push(...processedFiles);
-            } catch (error) {
-                console.error(`Error processing ${fileType} files:`, error);
-                // Convert error to FileError array format for consistency
-                const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-                const fileErrors: FileError[] = groupFiles.map(file => ({
+            // Report progress - completed stage
+            if (onProgress && currentIndex !== undefined && totalFiles !== undefined) {
+                onProgress({
+                    currentFile: currentIndex + 1,
+                    totalFiles,
+                    fileName: file.name,
+                    stage: 'completed',
+                    percentage: Math.round(((currentIndex + 1) / totalFiles) * 100)
+                });
+            }
+
+            return {
+                processType: 'processed',
+                meta,
+                originalFile: file,
+                processed,
+                thumbnail
+            };
+        } catch (error) {
+            return {
+                processType: 'unprocessed',
+                meta,
+                originalFile: file,
+                reason: {
                     fileName: file.name,
                     errorCode: 'processing-error',
-                    message: errorMessage
-                }));
-                const formattedError = fileErrors
-                    .map(e => `${e.fileName}: ${e.message}`)
-                    .join('\n');
-                throw new Error(formattedError);
-            }
+                    message: error instanceof Error ? error.message : 'Unknown error during processing'
+                }
+            };
         }
-
-        // No need to check constraints again, already validated in validateFiles
-
-        return allProcessedFiles;
     }
 
     /**
-     * Opens native file picker and processes selected files
+     * Convert file to base64
      */
-    static async pickMixed(options?: SelectionOptions & { accept?: string; multiple?: boolean }): Promise<ProcessedFile[]> {
-        return new Promise(async (resolve, reject) => {
-            // Create hidden file input
+    private static fileToBase64(file: File): Promise<string> {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = error => reject(error);
+        });
+    }
+
+    /**
+     * Process files and return array of ProcessedFile and UnProcessedFile
+     */
+    static async processFiles(
+        files: File[], 
+        options?: SelectionOptions
+    ): Promise<(ProcessedFile | UnProcessedFile)[]> {
+        if (!files || files.length === 0) {
+            return [];
+        }
+
+        const rules = options?.rules?.[0]; // For now, use first rule for all files
+        const results: (ProcessedFile | UnProcessedFile)[] = [];
+
+        // Check selection count constraints
+        if (rules?.minSelectionCount && files.length < rules.minSelectionCount) {
+            // Return all files as unprocessed with error
+            return files.map(file => {
+                const extension = '.' + file.name.split('.').pop()!.toLowerCase();
+                const fileType = this.detectFileType(file);
+                
+                return {
+                    processType: 'unprocessed' as const,
+                    meta: {
+                        name: file.name,
+                        size: file.size,
+                        type: fileType,
+                        extension,
+                        mimeType: file.type
+                    },
+                    originalFile: file,
+                    reason: {
+                        fileName: file.name,
+                        errorCode: 'too-few-files',
+                        message: `Minimum ${rules.minSelectionCount} file(s) required`
+                    }
+                };
+            });
+        }
+
+        if (rules?.maxSelectionCount && files.length > rules.maxSelectionCount) {
+            // Process only up to max count
+            files = files.slice(0, rules.maxSelectionCount);
+        }
+
+        // Process each file
+        for (let i = 0; i < files.length; i++) {
+            const result = await this.processFile(
+                files[i], 
+                rules, 
+                options?.onProgress,
+                i,
+                files.length
+            );
+            results.push(result);
+        }
+
+        return results;
+    }
+
+    /**
+     * Open native file picker and process files
+     */
+    static async pickMixed(options?: SelectionOptions): Promise<(ProcessedFile | UnProcessedFile)[]> {
+        return new Promise((resolve) => {
             const input = document.createElement('input');
             input.type = 'file';
-            input.multiple = options?.multiple !== false;
-
+            input.multiple = true;
+            
             // Set accept attribute based on rules
-            if (options?.accept) {
-                input.accept = options.accept;
-            } else if (options?.rules) {
-                const acceptTypes: string[] = [];
-                options.rules.forEach(rule => {
-                    if (rule.allowedMimeTypes) {
-                        acceptTypes.push(...rule.allowedMimeTypes);
-                    } else {
-                        // Add default types based on rule type
-                        switch (rule.type) {
-                            case RuleType.IMAGE:
-                                acceptTypes.push('image/*');
-                                break;
-                            case RuleType.VIDEO:
-                                acceptTypes.push('video/*');
-                                break;
-                            case RuleType.AUDIO:
-                                acceptTypes.push('audio/*');
-                                break;
-                            case RuleType.DOCUMENT:
-                                acceptTypes.push('.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.rtf');
-                                break;
-                            case RuleType.ARCHIVE:
-                                acceptTypes.push('.zip,.rar,.tar,.gz,.7z');
-                                break;
-                        }
-                    }
-                });
-                if (acceptTypes.length > 0) {
-                    input.accept = acceptTypes.join(',');
-                }
+            if (options?.rules?.[0]?.allowedMimeTypes) {
+                input.accept = options.rules[0].allowedMimeTypes.join(',');
             }
 
-            // Handle file selection
             input.onchange = async (e) => {
-                const files = Array.from((e.target as HTMLInputElement).files || []);
-                if (files.length === 0) {
-                    resolve([]);
-                    return;
-                }
-
-                try {
-                    const processed = await MediaHelper.processFiles(files, options);
-                    resolve(processed);
-                } catch (error) {
-                    reject(error);
-                }
+                const target = e.target as HTMLInputElement;
+                const files = Array.from(target.files || []);
+                const results = await this.processFiles(files, options);
+                resolve(results);
             };
 
-            // Handle cancel
-            input.oncancel = () => {
-                resolve([]);
-            };
-
-            // Trigger file picker
             input.click();
         });
     }
 
     /**
-     * Pick only image files
+     * Process files directly (for dropzone or external use)
      */
-    static async pickImages(options?: SelectionOptions): Promise<ProcessedFile[]> {
-        return MediaHelper.pickMixed({
-            ...options,
-            accept: 'image/*',
-            rules: options?.rules || [{
-                type: RuleType.IMAGE
-            }]
-        });
+    static async processFilesDirectly(
+        files: File[], 
+        options?: SelectionOptions
+    ): Promise<(ProcessedFile | UnProcessedFile)[]> {
+        return this.processFiles(files, options);
     }
 
     /**
-     * Pick only video files
-     */
-    static async pickVideos(options?: SelectionOptions): Promise<ProcessedFile[]> {
-        return MediaHelper.pickMixed({
-            ...options,
-            accept: 'video/*',
-            rules: options?.rules || [{
-                type: RuleType.VIDEO
-            }]
-        });
-    }
-
-    /**
-     * Pick only audio files
-     */
-    static async pickAudio(options?: SelectionOptions): Promise<ProcessedFile[]> {
-        return MediaHelper.pickMixed({
-            ...options,
-            accept: 'audio/*',
-            rules: options?.rules || [{
-                type: RuleType.AUDIO
-            }]
-        });
-    }
-
-    /**
-     * Pick only document files
-     */
-    static async pickDocuments(options?: SelectionOptions): Promise<ProcessedFile[]> {
-        return MediaHelper.pickMixed({
-            ...options,
-            accept: '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.rtf',
-            rules: options?.rules || [{
-                type: RuleType.DOCUMENT
-            }]
-        });
-    }
-
-    /**
-     * Pick only archive files
-     */
-    static async pickArchives(options?: SelectionOptions): Promise<ProcessedFile[]> {
-        return MediaHelper.pickMixed({
-            ...options,
-            accept: '.zip,.rar,.tar,.gz,.7z',
-            rules: options?.rules || [{
-                type: RuleType.ARCHIVE
-            }]
-        });
-    }
-
-    /**
-     * Opens a dropzone modal for file selection with drag & drop support
+     * Pick with dropzone modal
      */
     static async pickWithDropzone(options?: SelectionOptions & { 
         dropzoneText?: string;
         dropzoneClassName?: string;
-    }): Promise<ProcessedFile[]> {
-        return new Promise((resolve, reject) => {
-            import('./src/utils/dropzone.utils').then(({ createDropzoneModal, rulesToDropzoneOptions }) => {
-                import('react').then(React => {
-                    import('react-dom/client').then(ReactDOM => {
-                        import('./src/components/MediaDropzone').then(({ MediaDropzone }) => {
-                            const { container, cleanup } = createDropzoneModal();
-                            
-                            let hasResolved = false;
-                            
-                            const handleFilesProcessed = (files: ProcessedFile[]) => {
-                                if (!hasResolved) {
-                                    hasResolved = true;
-                                    cleanup();
-                                    resolve(files);
-                                }
-                            };
-                            
-                            const handleError = (errors: any) => {
-                                if (!hasResolved) {
-                                    hasResolved = true;
-                                    cleanup();
-                                    // Convert FileError array to Error for reject
-                                    const errorMessage = Array.isArray(errors) 
-                                        ? errors.map(e => `${e.fileName}: ${e.message}`).join('\n')
-                                        : 'Unknown error';
-                                    reject(new Error(errorMessage));
-                                }
-                            };
-                            
-                            const handleCancel = () => {
-                                if (!hasResolved) {
-                                    hasResolved = true;
-                                    cleanup();
-                                    resolve([]);
-                                }
-                            };
-                            
-                            // Create dropzone options from rules
-                            const dropzoneOptions = rulesToDropzoneOptions(options?.rules);
-                            
-                            // Create React root and render
-                            const root = ReactDOM.createRoot(container);
-                            root.render(
-                                React.createElement(MediaDropzone, {
-                                    options,
-                                    onFilesProcessed: handleFilesProcessed,
-                                    onError: handleError,
-                                    dropzoneOptions,
-                                    className: options?.dropzoneClassName || 'media-helper-dropzone',
-                                    children: React.createElement('div', {
-                                        style: {
-                                            border: '2px dashed #ccc',
-                                            borderRadius: '4px',
-                                            padding: '40px',
-                                            textAlign: 'center',
-                                            cursor: 'pointer',
-                                            minHeight: '200px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center'
-                                        }
-                                    }, options?.dropzoneText || 'Drag & drop files here, or click to select files')
-                                })
-                            );
-                            
-                            // Add close handler to container
-                            const closeBtn = container.querySelector('button');
-                            if (closeBtn) {
-                                closeBtn.addEventListener('click', handleCancel);
-                            }
-                        }).catch(reject);
-                    }).catch(reject);
-                }).catch(reject);
-            }).catch(reject);
-        });
+    }): Promise<(ProcessedFile | UnProcessedFile)[]> {
+        // Create and show dropzone modal
+        const { createDropzoneModal } = await import('./src/utils/dropzone.utils');
+        return createDropzoneModal(options);
     }
 }
 
-// Export all types
+// Export types
 export * from './src/types/common';
 export * from './src/types/image';
 export * from './src/types/video';
@@ -488,19 +347,9 @@ export * from './src/types/audio';
 export * from './src/types/document';
 export * from './src/types/archive';
 
-// Export individual processors for direct use
-export { processImageFile } from './src/utils/image.utils';
-export { processVideoFiles } from './src/utils/video.utils';
-export { processAudioFiles } from './src/utils/audio.utils';
-export { processDocumentFiles } from './src/utils/document.utils';
-export { processArchiveFiles } from './src/utils/archive.utils';
-
-// Export React components
+// Export component
 export { MediaDropzone } from './src/components/MediaDropzone';
 export type { MediaDropzoneProps } from './src/components/MediaDropzone';
 
-// Export dropzone utilities
-export { rulesToDropzoneOptions, createDropzoneModal } from './src/utils/dropzone.utils';
-
-// Default export
+// Export as default
 export default MediaHelper;

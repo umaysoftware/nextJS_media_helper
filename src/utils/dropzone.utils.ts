@@ -1,176 +1,142 @@
-import { DropzoneOptions } from 'react-dropzone';
-import { RuleType, RuleInfo } from '../types/common';
-import { ImageMimeTypes } from '../types/image';
-import { VideoMimeTypes } from '../types/video';
-import { AudioMimeTypes } from '../types/audio';
+import { SelectionOptions, ProcessedFile, UnProcessedFile } from '../types/common';
 
 /**
- * Convert RuleInfo to DropzoneOptions
+ * Create a temporary dropzone modal for file selection
  */
-export const rulesToDropzoneOptions = (rules?: RuleInfo[]): Partial<DropzoneOptions> => {
-    if (!rules || rules.length === 0) {
-        return {};
-    }
+export async function createDropzoneModal(options?: SelectionOptions & {
+    dropzoneText?: string;
+    dropzoneClassName?: string;
+}): Promise<(ProcessedFile | UnProcessedFile)[]> {
+    return new Promise((resolve) => {
+        // Create modal container
+        const modalContainer = document.createElement('div');
+        modalContainer.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        `;
 
-    const options: Partial<DropzoneOptions> = {};
-    const acceptTypes: Record<string, string[]> = {};
-    let maxSize: number | undefined;
-    let minSize: number | undefined;
-    let maxFiles: number | undefined;
+        // Create dropzone container
+        const dropzoneContainer = document.createElement('div');
+        dropzoneContainer.className = options?.dropzoneClassName || '';
+        dropzoneContainer.style.cssText = `
+            background: white;
+            border-radius: 8px;
+            padding: 40px;
+            min-width: 400px;
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed #d1d5db;
+            cursor: pointer;
+            position: relative;
+        `;
 
-    // Process each rule
-    rules.forEach(rule => {
-        // Handle file size constraints
-        if (rule.maxFileSize) {
-            maxSize = maxSize ? Math.min(maxSize, rule.maxFileSize) : rule.maxFileSize;
+        // Add text
+        const text = document.createElement('p');
+        text.textContent = options?.dropzoneText || 'Drag & drop files here, or click to select';
+        text.style.cssText = `
+            color: #6b7280;
+            font-size: 16px;
+            margin: 0;
+        `;
+        dropzoneContainer.appendChild(text);
+
+        // Create hidden file input
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.multiple = true;
+        fileInput.style.display = 'none';
+        
+        // Set accept attribute based on rules
+        if (options?.rules?.[0]?.allowedMimeTypes) {
+            fileInput.accept = options.rules[0].allowedMimeTypes.join(',');
         }
-        if (rule.minFileSize) {
-            minSize = minSize ? Math.max(minSize, rule.minFileSize) : rule.minFileSize;
-        }
 
-        // Handle file count constraints
-        if (rule.maxSelectionCount) {
-            maxFiles = maxFiles ? Math.min(maxFiles, rule.maxSelectionCount) : rule.maxSelectionCount;
-        }
+        // Handle file selection
+        const handleFiles = async (files: File[]) => {
+            modalContainer.remove();
+            
+            // Import MediaHelper dynamically
+            const { default: MediaHelper } = await import('../../index');
+            const results = await MediaHelper.processFilesDirectly(files, options);
+            resolve(results);
+        };
 
-        // Handle MIME types
-        if (rule.allowedMimeTypes) {
-            rule.allowedMimeTypes.forEach(mimeType => {
-                const [type, subtype] = mimeType.split('/');
-                const key = `${type}/*`;
-                if (!acceptTypes[key]) {
-                    acceptTypes[key] = [];
-                }
-                acceptTypes[key].push(`.${subtype}`);
-            });
-        } else {
-            // Add default MIME types based on rule type
-            switch (rule.type) {
-                case RuleType.IMAGE:
-                    acceptTypes['image/*'] = Object.values(ImageMimeTypes).map(mime => {
-                        const ext = mime.split('/')[1].replace('x-', '').replace('+xml', '');
-                        return `.${ext}`;
-                    });
-                    break;
-                case RuleType.VIDEO:
-                    acceptTypes['video/*'] = Object.values(VideoMimeTypes).map(mime => {
-                        const ext = mime.split('/')[1].replace('x-', '').replace('mp2t', 'ts');
-                        return `.${ext}`;
-                    });
-                    break;
-                case RuleType.AUDIO:
-                    acceptTypes['audio/*'] = Object.values(AudioMimeTypes).map(mime => {
-                        const ext = mime.split('/')[1].replace('x-', '').replace('mpeg', 'mp3');
-                        return `.${ext}`;
-                    });
-                    break;
-                case RuleType.DOCUMENT:
-                    const docExts = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt', '.csv', '.rtf'];
-                    acceptTypes['application/*'] = docExts;
-                    acceptTypes['text/*'] = ['.txt', '.csv'];
-                    break;
-                case RuleType.ARCHIVE:
-                    acceptTypes['application/*'] = ['.zip', '.rar', '.tar', '.gz', '.7z'];
-                    break;
+        // File input change handler
+        fileInput.onchange = (e) => {
+            const target = e.target as HTMLInputElement;
+            const files = Array.from(target.files || []);
+            if (files.length > 0) {
+                handleFiles(files);
             }
-        }
+        };
+
+        // Dropzone click handler
+        dropzoneContainer.onclick = () => {
+            fileInput.click();
+        };
+
+        // Drag and drop handlers
+        dropzoneContainer.ondragover = (e) => {
+            e.preventDefault();
+            dropzoneContainer.style.borderColor = '#667eea';
+            dropzoneContainer.style.background = '#ede9fe';
+        };
+
+        dropzoneContainer.ondragleave = (e) => {
+            e.preventDefault();
+            dropzoneContainer.style.borderColor = '#d1d5db';
+            dropzoneContainer.style.background = 'white';
+        };
+
+        dropzoneContainer.ondrop = (e) => {
+            e.preventDefault();
+            const files = Array.from(e.dataTransfer?.files || []);
+            if (files.length > 0) {
+                handleFiles(files);
+            }
+        };
+
+        // Close on backdrop click
+        modalContainer.onclick = (e) => {
+            if (e.target === modalContainer) {
+                modalContainer.remove();
+                resolve([]);
+            }
+        };
+
+        // Add close button
+        const closeButton = document.createElement('button');
+        closeButton.textContent = '×';
+        closeButton.style.cssText = `
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #6b7280;
+        `;
+        closeButton.onclick = () => {
+            modalContainer.remove();
+            resolve([]);
+        };
+
+        // Assemble modal
+        dropzoneContainer.appendChild(fileInput);
+        dropzoneContainer.appendChild(closeButton);
+        modalContainer.appendChild(dropzoneContainer);
+        document.body.appendChild(modalContainer);
     });
-
-    // Build dropzone options
-    if (Object.keys(acceptTypes).length > 0) {
-        options.accept = acceptTypes;
-    }
-    if (maxSize !== undefined) {
-        options.maxSize = maxSize;
-    }
-    if (minSize !== undefined) {
-        options.minSize = minSize;
-    }
-    if (maxFiles !== undefined) {
-        options.maxFiles = maxFiles;
-    }
-
-    return options;
-};
-
-/**
- * Create a temporary dropzone modal
- */
-export const createDropzoneModal = (): {
-    container: HTMLDivElement;
-    cleanup: () => void;
-} => {
-    // Create modal container
-    const container = document.createElement('div');
-    container.className = 'media-helper-dropzone-modal';
-    container.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-    `;
-
-    // Create modal content
-    const content = document.createElement('div');
-    content.className = 'media-helper-dropzone-content';
-    content.style.cssText = `
-        background: white;
-        border-radius: 8px;
-        padding: 32px;
-        min-width: 400px;
-        max-width: 600px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    `;
-
-    // Create close button
-    const closeButton = document.createElement('button');
-    closeButton.textContent = '×';
-    closeButton.style.cssText = `
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        background: none;
-        border: none;
-        font-size: 24px;
-        cursor: pointer;
-        color: #666;
-    `;
-
-    content.appendChild(closeButton);
-    container.appendChild(content);
-
-    // Cleanup function
-    const cleanup = () => {
-        document.body.removeChild(container);
-    };
-
-    // Close on backdrop click
-    container.addEventListener('click', (e) => {
-        if (e.target === container) {
-            cleanup();
-        }
-    });
-
-    // Close on close button click
-    closeButton.addEventListener('click', cleanup);
-
-    // Close on escape key
-    const handleEscape = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') {
-            cleanup();
-            document.removeEventListener('keydown', handleEscape);
-        }
-    };
-    document.addEventListener('keydown', handleEscape);
-
-    // Add to body
-    document.body.appendChild(container);
-
-    return { container: content, cleanup };
-};
+}
