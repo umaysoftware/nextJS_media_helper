@@ -3,9 +3,20 @@ import {
     ProcessedFile, 
     UnProcessedFile,
     FileError,
-    RuleInfo,
-    ExportedFile
+    RuleInfo
 } from './src/types/common';
+
+import { ImageRuleInfo } from './src/types/image';
+import { VideoRuleInfo } from './src/types/video';
+import { AudioRuleInfo } from './src/types/audio';
+import { DocumentRuleInfo } from './src/types/document';
+import { ArchiveRuleInfo } from './src/types/archive';
+
+import { processImageFile } from './src/utils/image.utils';
+import { processVideoFile } from './src/utils/video.utils';
+import { processAudioFile } from './src/utils/audio.utils';
+import { processDocumentFile } from './src/utils/document.utils';
+import { processArchiveFile } from './src/utils/archive.utils';
 
 /**
  * MediaHelper class with native file selection and processing
@@ -96,7 +107,7 @@ export class MediaHelper {
     }
 
     /**
-     * Process a single file
+     * Process a single file with type-specific rules
      */
     private static async processFile(
         file: File, 
@@ -105,8 +116,8 @@ export class MediaHelper {
         currentIndex?: number,
         totalFiles?: number
     ): Promise<ProcessedFile | UnProcessedFile> {
-        const extension = '.' + file.name.split('.').pop()!.toLowerCase();
         const fileType = this.detectFileType(file);
+        const extension = '.' + file.name.split('.').pop()!.toLowerCase();
         
         // Create meta object
         const meta = {
@@ -128,107 +139,36 @@ export class MediaHelper {
             };
         }
 
-        try {
-            // Report progress - processing stage
-            if (onProgress && currentIndex !== undefined && totalFiles !== undefined) {
-                onProgress({
-                    currentFile: currentIndex + 1,
-                    totalFiles,
-                    fileName: file.name,
-                    stage: 'processing',
-                    percentage: Math.round(((currentIndex + 0.5) / totalFiles) * 100)
-                });
-            }
-
-            // Process the file based on type
-            let processed: ExportedFile = {
-                name: file.name,
-                size: file.size,
-                type: fileType,
-                extension,
-                mimeType: file.type
-            };
-
-            let thumbnail: ExportedFile | undefined;
-
-            // Generate base64 if requested
-            if (rules?.willGenerateBase64) {
-                processed.base64 = await this.fileToBase64(file);
-            }
-
-            // Generate blob if requested
-            if (rules?.willGenerateBlob) {
-                processed.blob = new Blob([file], { type: file.type });
-            }
-
-            // Always include the file
-            processed.file = file;
-
-            // Generate URL if we have blob or file
-            if (processed.blob || processed.file) {
-                processed.url = URL.createObjectURL(processed.blob || processed.file);
-            }
-
-            // Generate thumbnail for images and videos
-            if (fileType === 'image' || fileType === 'video') {
-                // Simple thumbnail generation (you can enhance this)
-                thumbnail = {
-                    name: `thumb_${file.name}`,
-                    size: 0,
-                    type: fileType,
-                    extension,
-                    mimeType: file.type
+        // Process based on file type with specific rules
+        switch (fileType) {
+            case 'image':
+                return processImageFile(file, rules as ImageRuleInfo, onProgress, currentIndex, totalFiles);
+            
+            case 'video':
+                return processVideoFile(file, rules as VideoRuleInfo, onProgress, currentIndex, totalFiles);
+            
+            case 'audio':
+                return processAudioFile(file, rules as AudioRuleInfo, onProgress, currentIndex, totalFiles);
+            
+            case 'document':
+                return processDocumentFile(file, rules as DocumentRuleInfo, onProgress, currentIndex, totalFiles);
+            
+            case 'archive':
+                return processArchiveFile(file, rules as ArchiveRuleInfo, onProgress, currentIndex, totalFiles);
+            
+            default:
+                // Unknown file type
+                return {
+                    processType: 'unprocessed',
+                    meta,
+                    originalFile: file,
+                    reason: {
+                        fileName: file.name,
+                        errorCode: 'unknown-file-type',
+                        message: `Unknown file type: ${fileType}`
+                    }
                 };
-                
-                // For images, we can use the same file as thumbnail for now
-                if (fileType === 'image') {
-                    thumbnail.file = file;
-                    thumbnail.url = URL.createObjectURL(file);
-                }
-            }
-
-            // Report progress - completed stage
-            if (onProgress && currentIndex !== undefined && totalFiles !== undefined) {
-                onProgress({
-                    currentFile: currentIndex + 1,
-                    totalFiles,
-                    fileName: file.name,
-                    stage: 'completed',
-                    percentage: Math.round(((currentIndex + 1) / totalFiles) * 100)
-                });
-            }
-
-            return {
-                processType: 'processed',
-                meta,
-                originalFile: file,
-                processed,
-                thumbnail
-            };
-        } catch (error) {
-            return {
-                processType: 'unprocessed',
-                meta,
-                originalFile: file,
-                reason: {
-                    fileName: file.name,
-                    errorCode: 'processing-error',
-                    message: error instanceof Error ? error.message : 'Unknown error during processing'
-                }
-            };
         }
-    }
-
-    /**
-     * Convert file to base64
-     */
-    private static fileToBase64(file: File): Promise<string> {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result as string);
-            reader.onerror = error => reject(error);
-        });
     }
 
     /**
