@@ -32,10 +32,7 @@ import MediaHelper from 'nextjs-media-helper';
 // Option 1: Native file picker
 const processedFiles = await MediaHelper.pickMixed();
 
-// Option 2: Dropzone modal
-const processedFiles = await MediaHelper.pickWithDropzone();
-
-// Option 3: React component
+// Option 2: React component
 import { MediaDropzone } from 'nextjs-media-helper';
 <MediaDropzone onFilesProcessed={(files) => console.log(files)} />
 ```
@@ -54,31 +51,6 @@ const files = await MediaHelper.pickMixed();
 const files = await MediaHelper.pickMixed({
   multiple: true,  // Allow multiple file selection
   accept: '.jpg,.png,.mp4,.pdf'  // Custom file types
-});
-```
-
-### Dropzone Modal
-
-```typescript
-import MediaHelper, { RuleType } from 'nextjs-media-helper';
-
-// Open dropzone modal with drag & drop support
-const files = await MediaHelper.pickWithDropzone({
-  dropzoneText: 'Drag your files here or click to browse',
-  rules: [{
-    type: RuleType.IMAGE,
-    maxFileSize: 5 * 1024 * 1024, // 5MB
-    compressQuality: 80
-  }],
-  onProgress: (progress) => {
-    console.log(`${progress.percentage}% - ${progress.stage}`);
-  }
-});
-
-// With custom styling
-const files = await MediaHelper.pickWithDropzone({
-  dropzoneClassName: 'my-custom-dropzone',
-  dropzoneText: 'Drop images here'
 });
 ```
 

@@ -5,6 +5,7 @@ import { SelectionOptions, ProcessedFile, UnProcessedFile, ProgressInfo, FileErr
 export interface MediaDropzoneProps {
     options?: SelectionOptions;
     onFilesProcessed: (files: (ProcessedFile | UnProcessedFile)[]) => void;
+    onError?: (errors: FileError[]) => void;
     onProgress?: (progress: ProgressInfo) => void;
     dropzoneOptions?: DropzoneOptions;
     className?: string;

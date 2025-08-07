@@ -326,17 +326,6 @@ export class MediaHelper {
         return this.processFiles(files, options);
     }
 
-    /**
-     * Pick with dropzone modal
-     */
-    static async pickWithDropzone(options?: SelectionOptions & { 
-        dropzoneText?: string;
-        dropzoneClassName?: string;
-    }): Promise<(ProcessedFile | UnProcessedFile)[]> {
-        // Create and show dropzone modal
-        const { createDropzoneModal } = await import('./src/utils/dropzone.utils');
-        return createDropzoneModal(options);
-    }
 }
 
 // Export types
