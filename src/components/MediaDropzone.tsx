@@ -21,6 +21,13 @@ export interface MediaDropzoneProps {
         processing?: string;
         error?: string;
         subDesc?: string;
+        stages?: {
+            validating?: string;
+            compressing?: string;
+            'generating-thumbnail'?: string;
+            processing?: string;
+            completed?: string;
+        };
     };
     icon?: React.ReactNode;
 }
@@ -43,7 +50,14 @@ export const MediaDropzone: React.FC<MediaDropzoneProps> = ({
         dragInactive: 'Drag & drop files here, or click to select files',
         processing: 'Processing...',
         error: 'Error occurred',
-        subDesc: ''
+        subDesc: '',
+        stages: {
+            validating: 'Validating',
+            compressing: 'Compressing',
+            'generating-thumbnail': 'Generating thumbnail',
+            processing: 'Processing',
+            completed: 'Completed'
+        }
     },
     icon
 }) => {
@@ -103,6 +117,11 @@ export const MediaDropzone: React.FC<MediaDropzoneProps> = ({
                 }))
             );
             onError?.(errors);
+            
+            // Still process accepted files if any
+            if (acceptedFiles.length > 0) {
+                processFiles(acceptedFiles);
+            }
             return;
         }
 
@@ -113,43 +132,69 @@ export const MediaDropzone: React.FC<MediaDropzoneProps> = ({
     const computedDropzoneOptions = useMemo(() => {
         const opts: DropzoneOptions = {
             onDrop,
-            disabled: disabled || isProcessing
+            disabled: disabled || isProcessing,
+            multiple: true // Always allow multiple by default
         };
 
-        // If rules are provided, configure accept and file size
-        if (options?.rules?.[0]) {
-            const rule = options.rules[0];
+        // Merge all rules to create accept options
+        if (options?.rules && options.rules.length > 0) {
+            const accept: Record<string, string[]> = {};
+            let minSize: number | undefined;
+            let maxSize: number | undefined;
+            let maxFiles: number | undefined;
 
-            // Set accepted file types
-            if (rule.allowedMimeTypes) {
-                const accept: Record<string, string[]> = {};
-                rule.allowedMimeTypes.forEach(mimeType => {
-                    if (mimeType.endsWith('/*')) {
-                        // Handle wildcards like 'image/*'
-                        accept[mimeType] = [];
-                    } else {
-                        // Group by MIME type category
-                        const category = mimeType.split('/')[0] + '/*';
-                        if (!accept[category]) {
-                            accept[category] = [];
+            // Process all rules
+            options.rules.forEach(rule => {
+                // Handle MIME types
+                if (rule.allowedMimeTypes) {
+                    rule.allowedMimeTypes.forEach(mimeType => {
+                        if (mimeType.endsWith('/*')) {
+                            // Handle wildcards like 'image/*'
+                            if (!accept[mimeType]) {
+                                accept[mimeType] = [];
+                            }
+                        } else {
+                            // Specific MIME type
+                            const [type, subtype] = mimeType.split('/');
+                            const category = `${type}/*`;
+                            if (!accept[category]) {
+                                accept[category] = [];
+                            }
+                            // Add extension
+                            const ext = `.${subtype}`;
+                            if (!accept[category].includes(ext)) {
+                                accept[category].push(ext);
+                            }
                         }
-                        accept[category].push('.' + mimeType.split('/')[1]);
-                    }
-                });
+                    });
+                }
+
+                // Handle size limits (use most restrictive)
+                if (rule.minFileSize !== undefined) {
+                    minSize = minSize === undefined ? rule.minFileSize : Math.max(minSize, rule.minFileSize);
+                }
+                if (rule.maxFileSize !== undefined) {
+                    maxSize = maxSize === undefined ? rule.maxFileSize : Math.min(maxSize, rule.maxFileSize);
+                }
+
+                // Handle file count (use most restrictive)
+                if (rule.maxSelectionCount !== undefined) {
+                    maxFiles = maxFiles === undefined ? rule.maxSelectionCount : Math.min(maxFiles, rule.maxSelectionCount);
+                }
+            });
+
+            // Apply computed options
+            if (Object.keys(accept).length > 0) {
                 opts.accept = accept;
             }
-
-            // Set file size limits
-            if (rule.maxFileSize) {
-                opts.maxSize = rule.maxFileSize;
+            if (minSize !== undefined) {
+                opts.minSize = minSize;
             }
-            if (rule.minFileSize) {
-                opts.minSize = rule.minFileSize;
+            if (maxSize !== undefined) {
+                opts.maxSize = maxSize;
             }
-
-            // Set file count limits
-            if (rule.maxSelectionCount) {
-                opts.maxFiles = rule.maxSelectionCount;
+            if (maxFiles !== undefined) {
+                opts.maxFiles = maxFiles;
             }
         }
 
@@ -176,6 +221,11 @@ export const MediaDropzone: React.FC<MediaDropzoneProps> = ({
         (disabled || isProcessing) && disabledClassName
     ].filter(Boolean).join(' ');
 
+    // Get stage text
+    const getStageText = (stage: ProgressInfo['stage']) => {
+        return texts.stages?.[stage] || stage;
+    };
+
     return (
         <div {...getRootProps({ className: rootClassName })}>
             <input {...getInputProps()} />
@@ -195,9 +245,18 @@ export const MediaDropzone: React.FC<MediaDropzoneProps> = ({
                     }}>
                         {texts.processing || 'Processing...'}
                         {progressInfo && (
-                            <span style={{ marginLeft: '8px', fontWeight: 'bold' }}>
-                                {progressInfo.currentFile}/{progressInfo.totalFiles}
-                            </span>
+                            <>
+                                <span style={{ marginLeft: '8px', fontWeight: 'bold' }}>
+                                    {progressInfo.currentFile}/{progressInfo.totalFiles}
+                                </span>
+                                <div style={{ 
+                                    fontSize: '12px', 
+                                    marginTop: '4px',
+                                    color: '#999'
+                                }}>
+                                    {getStageText(progressInfo.stage)}
+                                </div>
+                            </>
                         )}
                     </div>
 
@@ -224,7 +283,9 @@ export const MediaDropzone: React.FC<MediaDropzoneProps> = ({
                         <div style={{
                             fontSize: '12px',
                             color: '#999',
-                            textAlign: 'center'
+                            textAlign: 'center',
+                            wordBreak: 'break-word',
+                            maxWidth: '300px'
                         }}>
                             {progressInfo.fileName}
                         </div>
