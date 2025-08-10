@@ -1,56 +1,131 @@
 # NextJS Media Helper
 
-A comprehensive media file processing library for Next.js applications. Features native browser file selection, automatic type detection, validation, compression, and WebP thumbnail generation for all file types.
+A powerful and flexible media file processing library for React and Next.js applications. Handle images, videos, audio files, documents, and archives with ease - featuring compression, thumbnail generation, format conversion, and comprehensive validation.
 
-## Features
+[![npm version](https://img.shields.io/npm/v/nextjs-media-helper.svg)](https://www.npmjs.com/package/nextjs-media-helper)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
 
-- 🎯 **Multiple Selection Methods**: Native file picker, drag & drop modal, or React component
-- 🎨 **Multi-format Support**: Images, Videos, Audio, Documents, Archives
-- 🔍 **Automatic Type Detection**: Smart file type detection based on MIME types and extensions
-- 📏 **Validation Rules**: File size limits, type restrictions, count constraints
-- 🗜️ **Compression**: Automatic compression for images, videos (WebM via MediaRecorder), and audio
-- 🖼️ **WebP Thumbnails**: Unified WebP thumbnail generation for all file types
-- 🔄 **Format Conversion**: Convert between different formats (where supported)
-- 📦 **Flexible Output**: Base64, Blob, File objects, and Object URLs
-- ⚡ **Browser-based Processing**: Uses MediaRecorder API for video, FFmpeg.wasm for audio
-- 📊 **Progress Tracking**: Real-time progress callbacks for all operations
-- 🎯 **Drag & Drop Support**: Built-in dropzone functionality with react-dropzone
+## ✨ Features
 
-## Installation
+- 🎯 **Multi-format Support** - Images, videos, audio, documents, and archives
+- 🖼️ **Smart Thumbnails** - Automatic thumbnail generation for all media types
+- 🗜️ **Compression** - Built-in compression for images and videos
+- 🔄 **Format Conversion** - Convert between different media formats
+- 📏 **Validation** - Comprehensive file validation with custom rules
+- 🎨 **Drag & Drop** - Beautiful React dropzone component
+- 📊 **Progress Tracking** - Real-time processing progress updates
+- 🌍 **i18n Ready** - Full internationalization support
+- 💪 **TypeScript** - Fully typed for excellent DX
+- ⚡ **Lightweight** - Zero dependencies for core functionality
+
+## 📦 Installation
 
 ```bash
 npm install nextjs-media-helper
 # or
 yarn add nextjs-media-helper
+# or
+pnpm add nextjs-media-helper
 ```
 
-## Quick Start
+## 🚀 Quick Start
+
+```typescript
+import MediaHelper, { MediaDropzone } from 'nextjs-media-helper';
+
+// Option 1: Native file picker
+const files = await MediaHelper.pickMixed({
+  rules: [{
+    allowedMimeTypes: ['image/*'],
+    maxFileSize: 10 * 1024 * 1024 // 10MB
+  }]
+});
+
+// Option 2: React Dropzone Component
+<MediaDropzone
+  onFilesProcessed={(files) => console.log(files)}
+  options={{
+    rules: [{
+      allowedMimeTypes: ['image/*', 'video/*'],
+      maxFileSize: 50 * 1024 * 1024
+    }]
+  }}
+/>
+```
+
+## 📖 Usage Examples
+
+### Basic File Selection
 
 ```typescript
 import MediaHelper from 'nextjs-media-helper';
 
-// Option 1: Native file picker
-const processedFiles = await MediaHelper.pickMixed();
-
-// Option 2: React component
-import { MediaDropzone } from 'nextjs-media-helper';
-<MediaDropzone onFilesProcessed={(files) => console.log(files)} />
-```
-
-## Usage Examples
-
-### Basic Usage - Native File Picker
-
-```typescript
-import MediaHelper, { RuleType } from 'nextjs-media-helper';
-
-// Open file picker - accepts any file type
+// Pick any files
 const files = await MediaHelper.pickMixed();
 
-// Open file picker - with options
+// Pick with validation rules
 const files = await MediaHelper.pickMixed({
-  multiple: true,  // Allow multiple file selection
-  accept: '.jpg,.png,.mp4,.pdf'  // Custom file types
+  rules: [{
+    allowedMimeTypes: ['image/jpeg', 'image/png'],
+    minFileSize: 1024,        // 1KB minimum
+    maxFileSize: 5242880,     // 5MB maximum
+    maxSelectionCount: 10     // Max 10 files
+  }]
+});
+```
+
+### Image Processing
+
+```typescript
+const images = await MediaHelper.pickMixed({
+  rules: [{
+    allowedMimeTypes: ['image/*'],
+    maxFileSize: 10 * 1024 * 1024,
+    
+    // Image-specific options
+    processedCompressQuality: 80,  // Compress to 80% quality
+    processedFormat: 'webp',       // Convert to WebP
+    thumbnailCompressQuality: 60,  // Thumbnail at 60% quality
+    thumbnailFormat: 'jpeg',       // Thumbnail as JPEG
+    
+    // Output options
+    willGenerateBase64: true,      // Generate base64 string
+    willGenerateBlob: true         // Generate blob object
+  }]
+});
+```
+
+### Video Processing
+
+```typescript
+const videos = await MediaHelper.pickMixed({
+  rules: [{
+    allowedMimeTypes: ['video/*'],
+    maxFileSize: 100 * 1024 * 1024,
+    
+    // Video-specific options
+    startAt: 2,                    // Thumbnail from 2nd second
+    duration: 10,                  // Extract 10-second clip
+    processedCompressQuality: 70,  // 70% quality compression
+    processedFormat: 'webm'        // Convert to WebM
+  }]
+});
+```
+
+### Audio Processing
+
+```typescript
+const audioFiles = await MediaHelper.pickMixed({
+  rules: [{
+    allowedMimeTypes: ['audio/*'],
+    maxFileSize: 20 * 1024 * 1024,
+    
+    // Audio-specific options
+    startAt: 0,                    // Start from beginning
+    duration: 30,                  // 30-second preview
+    processedFormat: 'mp3'         // Convert to MP3
+  }]
 });
 ```
 
@@ -58,673 +133,297 @@ const files = await MediaHelper.pickMixed({
 
 ```tsx
 import React, { useState } from 'react';
-import { MediaDropzone, ProcessedFile, RuleType, FileError } from 'nextjs-media-helper';
+import { MediaDropzone, ProcessedFile, UnProcessedFile } from 'nextjs-media-helper';
 
-const MyComponent: React.FC = () => {
-  const [files, setFiles] = useState<ProcessedFile[]>([]);
-  const [errors, setErrors] = useState<FileError[]>([]);
+function MyComponent() {
+  const [files, setFiles] = useState([]);
+
+  const handleFiles = (results) => {
+    // Separate processed and failed files
+    const processed = results.filter(f => f.processType === 'processed');
+    const failed = results.filter(f => f.processType === 'unprocessed');
+    
+    console.log('Success:', processed);
+    console.log('Failed:', failed);
+    
+    setFiles(processed);
+  };
 
   return (
     <MediaDropzone
+      onFilesProcessed={handleFiles}
       options={{
         rules: [{
-          type: RuleType.IMAGE,
-          maxFileSize: 10 * 1024 * 1024,
-          allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp']
-        }],
-        onProgress: (progress) => {
-          console.log(`Processing: ${progress.percentage}%`);
-        }
+          allowedMimeTypes: ['image/*', 'video/*'],
+          maxFileSize: 50 * 1024 * 1024,
+          maxSelectionCount: 5
+        }]
       }}
-      onFilesProcessed={setFiles}
-      onError={(errors) => {
-        console.log('Errors:', errors);
-        // errors: [{ fileName: 'test.txt', errorCode: 'file-invalid-type', message: 'File type must be image/jpeg, image/png, image/webp' }]
-        setErrors(errors);
-      }}
-      className="border-2 border-dashed border-gray-300 rounded-lg p-8"
-      activeClassName="border-blue-500"
-      acceptClassName="border-green-500"
-      rejectClassName="border-red-500"
-    >
-      <div className="text-center">
-        <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-          <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      icon={
+        <svg className="w-12 h-12" fill="none" stroke="currentColor">
+          {/* Your icon SVG */}
         </svg>
-        <p className="mt-2 text-sm text-gray-600">
-          Drop files here or click to select
-        </p>
-        <p className="text-xs text-gray-500">
-          PNG, JPG, WEBP up to 10MB
-        </p>
-      </div>
-    </MediaDropzone>
+      }
+      texts={{
+        dragActive: 'Drop files here...',
+        dragInactive: 'Drag & drop or click to browse',
+        subDesc: 'Images and videos up to 50MB',
+        processing: 'Processing files...'
+      }}
+    />
   );
-};
+}
 ```
 
-### Dropzone with Turkish Texts
+### Internationalization
 
 ```tsx
 <MediaDropzone
-  options={{
-    rules: [{
-      type: RuleType.IMAGE,
-      maxFileSize: 5 * 1024 * 1024
-    }]
-  }}
-  onFilesProcessed={setFiles}
+  onFilesProcessed={handleFiles}
   texts={{
     dragActive: 'Dosyaları buraya bırakın...',
-    dragInactive: 'Dosyaları sürükleyin veya seçmek için tıklayın',
-    processing: 'İşleniyor...',
-    error: 'Hata oluştu'
-  }}
-  className="border-2 border-dashed border-gray-300 rounded-lg p-8"
-/>
-```
-
-### Dropzone with Icon and Description
-
-```tsx
-<MediaDropzone
-  options={{
-    rules: [{
-      type: RuleType.IMAGE,
-      maxFileSize: 10 * 1024 * 1024
-    }]
-  }}
-  onFilesProcessed={setFiles}
-  icon={
-    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-    </svg>
-  }
-  texts={{
-    dragActive: 'Drop your images here...',
-    dragInactive: 'Drag & drop images here, or click to browse',
-    subDesc: 'Support for JPG, PNG, WEBP up to 10MB',
-    processing: 'Processing images...'
-  }}
-  className="border-2 border-dashed border-gray-300 rounded-lg"
-/>
-```
-
-### With Validation Rules
-
-```typescript
-import MediaHelper, { RuleType, ImageMimeTypes, VideoMimeTypes } from 'nextjs-media-helper';
-
-const processedFiles = await MediaHelper.pickMixed({
-  multiple: true,
-  rules: [
-    {
-      type: RuleType.IMAGE,
-      allowedMimeTypes: [ImageMimeTypes.JPEG, ImageMimeTypes.PNG, ImageMimeTypes.WEBP],
-      maxFileSize: 5 * 1024 * 1024, // 5MB
-      minFileSize: 10 * 1024, // 10KB
-      compressQuality: 80, // 80% quality
-      willGenerateBase64: true,
-      willGenerateBlob: true
-    },
-    {
-      type: RuleType.VIDEO,
-      allowedMimeTypes: [VideoMimeTypes.MP4],
-      maxFileSize: 100 * 1024 * 1024, // 100MB
-      compressQuality: 70,
-      willGenerateBlob: true
-    },
-    {
-      type: RuleType.GENERIC,
-      minSelectionCount: 1,
-      maxSelectionCount: 10
+    dragInactive: 'Sürükle bırak veya seçmek için tıkla',
+    subDesc: 'Maksimum 50MB resim ve video',
+    processing: 'Dosyalar işleniyor...',
+    stages: {
+      validating: 'Doğrulanıyor...',
+      compressing: 'Sıkıştırılıyor...',
+      'generating-thumbnail': 'Önizleme oluşturuluyor...',
+      processing: 'İşleniyor...',
+      completed: 'Tamamlandı!'
     }
-  ]
-});
-
-// Access processed data
-processedFiles.forEach(file => {
-  console.log(`Name: ${file.name}`);
-  console.log(`Type: ${file.type}`);
-  console.log(`Size: ${file.size} bytes`);
-  
-  if (file.processed.base64) {
-    console.log('Base64 available');
-  }
-  
-  if (file.processed.url) {
-    console.log('Object URL available:', file.processed.url);
-    // Remember to revoke URLs when done: URL.revokeObjectURL(file.processed.url)
-  }
-  
-  if (file.thumbnail) {
-    console.log('WebP thumbnail generated');
-    // All thumbnails are in WebP format
-    if (file.thumbnail.url) {
-      console.log('Thumbnail URL:', file.thumbnail.url);
-    }
-  }
-});
+  }}
+/>
 ```
 
 ### Progress Tracking
 
 ```typescript
-import MediaHelper, { RuleType } from 'nextjs-media-helper';
-
 const files = await MediaHelper.pickMixed({
-  multiple: true,
-  rules: [{
-    type: RuleType.VIDEO,
-    compressQuality: 80
-  }],
+  rules: [/* your rules */],
   onProgress: (progress) => {
     console.log(`Processing ${progress.fileName}`);
-    console.log(`File ${progress.currentFile} of ${progress.totalFiles}`);
     console.log(`Stage: ${progress.stage}`);
     console.log(`Progress: ${progress.percentage}%`);
-    
-    // Update UI
-    updateProgressBar(progress.percentage);
-    updateStatusText(`${progress.stage}: ${progress.fileName}`);
+    console.log(`File ${progress.currentFile} of ${progress.totalFiles}`);
   }
 });
-
-// Progress stages:
-// - 'validating': File validation
-// - 'compressing': Compression (if enabled)
-// - 'generating-thumbnail': Thumbnail generation
-// - 'processing': General processing
-// - 'completed': File processing completed
 ```
 
-### Type-Specific File Selection
+### Multiple File Type Rules
 
-```typescript
-// Pick only images
-const images = await MediaHelper.pickImages({
-  rules: [{
-    type: RuleType.IMAGE,
-    compressQuality: 90,
-    willGenerateBase64: true
-  }]
-});
-
-// Pick only videos
-const videos = await MediaHelper.pickVideos({
-  rules: [{
-    type: RuleType.VIDEO,
-    maxFileSize: 200 * 1024 * 1024
-  }]
-});
-
-// Pick only audio files
-const audioFiles = await MediaHelper.pickAudio();
-
-// Pick only documents
-const documents = await MediaHelper.pickDocuments();
-
-// Pick only archives
-const archives = await MediaHelper.pickArchives();
-```
-
-### React Component Example
-
-```tsx
-import React, { useState } from 'react';
-import MediaHelper, { ProcessedFile, RuleType } from 'nextjs-media-helper';
-
-const MediaUploader: React.FC = () => {
-  const [files, setFiles] = useState<ProcessedFile[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [progress, setProgress] = useState<number>(0);
-  const [currentFile, setCurrentFile] = useState<string>('');
-
-  const handleFileSelect = async () => {
-    setLoading(true);
-    setProgress(0);
-    try {
-      const processed = await MediaHelper.pickMixed({
-        multiple: true,
-        rules: [
-          {
-            type: RuleType.IMAGE,
-            compressQuality: 85,
-            willGenerateBase64: true
-          },
-          {
-            type: RuleType.VIDEO,
-            compressQuality: 70,
-            willGenerateBlob: true
-          }
-        ],
-        onProgress: (progressInfo) => {
-          setProgress(progressInfo.percentage);
-          setCurrentFile(`${progressInfo.stage}: ${progressInfo.fileName}`);
-        }
-      });
-      
-      setFiles(processed);
-    } catch (error) {
-      console.error('Processing failed:', error);
-    } finally {
-      setLoading(false);
-      setProgress(100);
-    }
-  };
-
-  return (
-    <div>
-      <button onClick={handleFileSelect} disabled={loading}>
-        {loading ? 'Processing...' : 'Select Files'}
-      </button>
-      
-      {loading && (
-        <div className="progress">
-          <div className="progress-bar" style={{ width: `${progress}%` }} />
-          <span>{currentFile}</span>
-        </div>
-      )}
-      
-      <div className="file-grid">
-        {files.map((file, index) => (
-          <div key={index} className="file-item">
-            {file.thumbnail?.base64 && (
-              <img 
-                src={file.thumbnail.base64} 
-                alt={file.name}
-                style={{ width: 200, height: 200, objectFit: 'cover' }}
-              />
-            )}
-            <h3>{file.name}</h3>
-            <p>Type: {file.type}</p>
-            <p>Size: {(file.size / 1024 / 1024).toFixed(2)} MB</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-```
-
-### Direct Processing (Without File Picker)
-
-If you already have File objects, you can use the individual processors directly:
-
-```typescript
-import { processImageFile, processVideoFiles, RuleType } from 'nextjs-media-helper';
-
-// Process image files directly
-const imageFiles: File[] = [...]; // Your image files
-const processedImages = await processImageFile(imageFiles, {
-  rules: [{
-    type: RuleType.IMAGE,
-    compressQuality: 80,
-    willGenerateBase64: true
-  }]
-});
-
-// Process video files directly
-const videoFiles: File[] = [...]; // Your video files
-const processedVideos = await processVideoFiles(videoFiles, {
-  rules: [{
-    type: RuleType.VIDEO,
-    compressQuality: 70
-  }]
-});
-```
-
-### Custom File Input Example
-
-```typescript
-// Using with a custom file input
-const handleFileInputChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-  const files = Array.from(event.target.files || []);
-  
-  // Process specific file types
-  const imageFiles = files.filter(f => f.type.startsWith('image/'));
-  const processedImages = await processImageFile(imageFiles, {
-    rules: [{
-      type: RuleType.IMAGE,
-      compressQuality: 85
-    }]
-  });
-};
-```
-
-## API Reference
-
-### MediaHelper Class
-
-The main class providing file selection and processing functionality.
-
-#### Methods
-
-##### `MediaHelper.pickMixed(options?)`
-Opens native file picker and processes selected files of any type.
-
-**Parameters:**
-- `options`: Optional configuration object
-  - `multiple`: Boolean - Allow multiple file selection (default: true)
-  - `accept`: String - Custom accept attribute for file input
-  - `rules`: Array of RuleInfo objects for validation and processing
-  - `onProgress`: Progress callback function (optional)
-
-**Returns:** `Promise<ProcessedFile[]>`
-
-##### `MediaHelper.pickImages(options?)`
-Opens file picker filtered for image files only.
-
-##### `MediaHelper.pickVideos(options?)`
-Opens file picker filtered for video files only.
-
-##### `MediaHelper.pickAudio(options?)`
-Opens file picker filtered for audio files only.
-
-##### `MediaHelper.pickDocuments(options?)`
-Opens file picker filtered for document files only.
-
-##### `MediaHelper.pickArchives(options?)`
-Opens file picker filtered for archive files only.
-
-##### `MediaHelper.pickWithDropzone(options?)`
-Opens a modal with drag & drop support for file selection.
-
-**Parameters:**
-- `options`: Optional configuration object (extends SelectionOptions)
-  - `dropzoneText`: String - Custom text to display in dropzone
-  - `dropzoneClassName`: String - Custom CSS class for dropzone styling
-  - All SelectionOptions parameters
-
-**Returns:** `Promise<ProcessedFile[]>`
-
-##### `MediaHelper.processFilesDirectly(files, options?)`
-Process files directly without file picker (useful for custom implementations).
-
-**Parameters:**
-- `files`: Array of File objects to process
-- `options`: SelectionOptions object
-
-**Returns:** `Promise<ProcessedFile[]>`
-
-### React Components
-
-#### MediaDropzone
-
-A React component that provides drag & drop file selection with built-in processing.
-
-**Props:**
-- `options?: SelectionOptions` - File processing options
-- `onFilesProcessed: (files: ProcessedFile[]) => void` - Callback when files are processed
-- `onError?: (error: Error) => void` - Error callback
-- `onProgress?: (progress: ProgressInfo) => void` - Progress callback
-- `dropzoneOptions?: DropzoneOptions` - react-dropzone options
-- `className?: string` - CSS class for root element
-- `activeClassName?: string` - CSS class when dragging
-- `acceptClassName?: string` - CSS class when file will be accepted
-- `rejectClassName?: string` - CSS class when file will be rejected
-- `disabledClassName?: string` - CSS class when disabled
-- `children?: React.ReactNode` - Custom content
-- `disabled?: boolean` - Disable the dropzone
-- `texts?: object` - Custom text labels
-  - `dragActive?: string` - Text shown when dragging files over dropzone
-  - `dragInactive?: string` - Text shown in default state  
-  - `processing?: string` - Text shown while processing files
-  - `error?: string` - Text shown when error occurs
-  - `subDesc?: string` - Subtitle/description text shown below the main text
-- `icon?: React.ReactNode` - React node to display as icon above the text
-
-### Individual Processors
-
-For direct file processing without the file picker:
-
-- `processImageFile(files: File[], options?): Promise<ProcessedFile[]>`
-- `processVideoFiles(files: File[], options?): Promise<ProcessedFile[]>`
-- `processAudioFiles(files: File[], options?): Promise<ProcessedFile[]>`
-- `processDocumentFiles(files: File[], options?): Promise<ProcessedFile[]>`
-- `processArchiveFiles(files: File[], options?): Promise<ProcessedFile[]>`
-
-### Types
-
-#### RuleType Enum
-```typescript
-enum RuleType {
-  IMAGE = "image",
-  VIDEO = "video", 
-  AUDIO = "audio",
-  DOCUMENT = "document",
-  ARCHIVE = "archive",
-  GENERIC = "generic" // Applies to all file types
-}
-```
-
-#### ProgressInfo Interface
-```typescript
-interface ProgressInfo {
-  currentFile: number;    // Current file index (1-based)
-  totalFiles: number;     // Total number of files
-  fileName: string;       // Name of the file being processed
-  stage: 'validating' | 'compressing' | 'generating-thumbnail' | 'processing' | 'completed';
-  percentage: number;     // Overall progress percentage (0-100)
-}
-```
-
-#### SelectionOptions Interface
-```typescript
-interface SelectionOptions {
-  rules?: RuleInfo[];
-  onProgress?: (progress: ProgressInfo) => void;
-}
-```
-
-#### RuleInfo Interface
-```typescript
-interface RuleInfo {
-  type: RuleType;
-  allowedMimeTypes?: string[];
-  minSelectionCount?: number;
-  maxSelectionCount?: number;
-  minFileSize?: number;
-  maxFileSize?: number;
-  willGenerateBase64?: boolean;
-  willGenerateBlob?: boolean;
-  compressQuality?: number; // 0-100
-}
-```
-
-#### ProcessedFile Interface
-```typescript
-interface ProcessedFile {
-  name: string;
-  size: number;
-  type: string;
-  extension: string;
-  mimeType: string;
-  originalFile: File;
-  processed: {
-    base64?: string;
-    blob?: Blob;
-    file?: File;
-    url?: string;  // Object URL (remember to revoke when done)
-  };
-  thumbnail?: {
-    base64?: string;
-    blob?: Blob;
-    file?: File;
-    url?: string;  // Object URL (remember to revoke when done)
-  };
-}
-```
-
-#### FileError Interface
-```typescript
-interface FileError {
-  fileName: string;      // Name of the file that caused the error
-  errorCode: string;     // Error code (e.g., 'file-too-large', 'file-invalid-type')
-  message: string;       // Human-readable error message
-}
-```
-
-Common error codes:
-- `file-too-large`: File exceeds maxSize
-- `file-too-small`: File is below minSize  
-- `file-invalid-type`: File type not accepted
-- `too-many-files`: Exceeds maxFiles limit
-- `too-few-files`: Below minimum file count
-- `unknown-file-type`: Unable to detect file type
-- `processing-error`: Error during file processing
-- `PROCESSING_ERROR`: Custom error during file processing (from dropzone)
-
-## Supported File Types
-
-### Images
-- JPEG, PNG, GIF, BMP, TIFF, WebP, SVG, ICO, AVIF, HEIC, HEIF
-
-### Videos
-- MP4, WebM, AVI, MKV, MOV, FLV, WMV, OGG, MPEG, TS, M4V
-- **Note**: Video compression outputs WebM format using MediaRecorder API
-
-### Audio
-- MP3, WAV, OGG, FLAC, AAC, M4A, WMA, AMR, AIFF, OPUS
-
-### Documents
-- PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, CSV, RTF
-
-### Archives
-- ZIP, RAR, TAR, GZ
-
-## Thumbnail Generation
-
-All file types generate thumbnails in WebP format:
-
-| File Type | Thumbnail Description |
-|-----------|----------------------|
-| **Images** | Resized to 200x200px maintaining aspect ratio |
-| **Videos** | Frame extracted from the video |
-| **Audio** | Visual waveform representation with file type indicator |
-| **Documents** | Document icon with file type text |
-| **Archives** | Archive icon with file size display |
-
-## Advanced Features
-
-### File Size Validation
-```typescript
-const files = await MediaHelper.pickMixed({
-  rules: [{
-    type: RuleType.IMAGE,
-    minFileSize: 100 * 1024,     // 100KB minimum
-    maxFileSize: 10 * 1024 * 1024 // 10MB maximum
-  }]
-});
-```
-
-### File Count Limits
-```typescript
-const files = await MediaHelper.pickMixed({
-  rules: [{
-    type: RuleType.GENERIC,
-    minSelectionCount: 2,  // At least 2 files
-    maxSelectionCount: 5   // Maximum 5 files
-  }]
-});
-```
-
-### Mixed Type Processing
 ```typescript
 const files = await MediaHelper.pickMixed({
   rules: [
     {
-      type: RuleType.IMAGE,
-      compressQuality: 90
+      // Images
+      allowedMimeTypes: ['image/*'],
+      maxFileSize: 10 * 1024 * 1024,
+      processedCompressQuality: 85,
+      processedFormat: 'webp'
     },
     {
-      type: RuleType.VIDEO,
-      compressQuality: 70
+      // Videos
+      allowedMimeTypes: ['video/*'],
+      maxFileSize: 100 * 1024 * 1024,
+      startAt: 1,
+      processedFormat: 'webm'
     },
     {
-      type: RuleType.GENERIC,
-      maxSelectionCount: 10
+      // Documents
+      allowedMimeTypes: ['application/pdf', 'application/msword'],
+      maxFileSize: 5 * 1024 * 1024
     }
   ]
 });
 ```
 
-## Browser Compatibility
+## 📊 Response Structure
 
-- Modern browsers with Web Workers support
-- FFmpeg.wasm requires SharedArrayBuffer support
-- Canvas API for image processing
-- FileReader API for file handling
+### ProcessedFile
 
-## Performance Considerations
-
-- Large video files may take time to process
-- Video compression uses MediaRecorder API (WebM output)
-- Audio processing uses FFmpeg.wasm (loaded on-demand)
-- Image compression uses browser-image-compression library
-- Progress callbacks help track long-running operations
-- Object URLs should be revoked after use to prevent memory leaks
-- Consider using Web Workers for heavy processing tasks
-
-## Error Handling
+Successfully processed files return this structure:
 
 ```typescript
-try {
-  const files = await MediaHelper.pickMixed({
-    rules: [{
-      type: RuleType.IMAGE,
-      maxFileSize: 5 * 1024 * 1024
-    }]
-  });
-} catch (error) {
-  if (error.message.includes('too large')) {
-    console.error('File size exceeded');
-  } else if (error.message.includes('not allowed')) {
-    console.error('File type not allowed');
+{
+  processType: 'processed',
+  meta: {
+    name: string,          // Original filename
+    size: number,          // Original file size
+    type: string,          // File type (image/video/audio/document/archive)
+    extension: string,     // File extension
+    mimeType: string       // MIME type
+  },
+  originalFile: File,      // Original File object
+  processed: {
+    name: string,
+    size: number,
+    type: string,
+    extension: string,
+    mimeType: string,
+    file?: File,           // Processed file
+    blob?: Blob,           // Blob object (if requested)
+    base64?: string,       // Base64 string (if requested)
+    url?: string           // Object URL for preview
+  },
+  thumbnail?: {            // Thumbnail (for images/videos)
+    name: string,
+    size: number,
+    type: string,
+    extension: string,
+    mimeType: string,
+    file?: File,
+    url?: string
   }
 }
 ```
 
-## URL Management
+### UnProcessedFile
 
-Remember to clean up Object URLs when you're done using them:
+Failed files return this structure:
 
 ```typescript
-const files = await MediaHelper.pickMixed();
-
-// Use the URLs
-files.forEach(file => {
-  if (file.processed.url) {
-    // Use the URL (e.g., as img src)
-    console.log(file.processed.url);
+{
+  processType: 'unprocessed',
+  meta: {
+    name: string,
+    size: number,
+    type: string,
+    extension: string,
+    mimeType: string
+  },
+  originalFile: File,
+  reason: {
+    fileName: string,
+    errorCode: string,     // Error code for handling
+    message: string        // Human-readable message
   }
-});
-
-// Clean up when done
-files.forEach(file => {
-  if (file.processed.url) {
-    URL.revokeObjectURL(file.processed.url);
-  }
-  if (file.thumbnail?.url) {
-    URL.revokeObjectURL(file.thumbnail.url);
-  }
-});
+}
 ```
 
-## Notes
+## 🎨 Thumbnail Generation
 
-- All thumbnails are generated in WebP format for consistency and performance
-- Video compression outputs WebM format using MediaRecorder API
-- Document format conversion requires server-side processing
-- Archive extraction not implemented (use JSZip or similar)
-- Cancel file selection returns empty array, not an error
-- Object URLs are created for processed files and thumbnails - remember to revoke them
+The library automatically generates appropriate thumbnails:
 
-## License
+- **Images** → Resized, compressed thumbnails
+- **Videos** → Frame capture from specified timestamp
+- **Audio** → Waveform visualization
+- **Documents** → Icon with file type indicator
+- **Archives** → Icon with file size display
 
-MIT
+## ⚙️ API Reference
 
-## Contributing
+### MediaHelper Methods
 
-Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+#### `MediaHelper.pickMixed(options?)`
+Opens native file picker for any file type.
+
+#### `MediaHelper.processFilesDirectly(files, options?)`
+Process an array of File objects directly.
+
+### MediaDropzone Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `options` | `SelectionOptions` | Processing rules and configuration |
+| `onFilesProcessed` | `(files: (ProcessedFile \| UnProcessedFile)[]) => void` | Callback with results |
+| `onError` | `(errors: FileError[]) => void` | Error callback |
+| `onProgress` | `(progress: ProgressInfo) => void` | Progress callback |
+| `dropzoneOptions` | `DropzoneOptions` | react-dropzone options |
+| `texts` | `object` | UI text customization |
+| `icon` | `ReactNode` | Custom icon component |
+| `className` | `string` | CSS class for root element |
+| `disabled` | `boolean` | Disable the dropzone |
+
+### Rule Options
+
+#### Common Rules (all file types)
+```typescript
+{
+  allowedMimeTypes?: string[],    // e.g., ['image/*', 'video/mp4']
+  minFileSize?: number,            // Minimum size in bytes
+  maxFileSize?: number,            // Maximum size in bytes
+  minSelectionCount?: number,      // Minimum files required
+  maxSelectionCount?: number,      // Maximum files allowed
+  willGenerateBase64?: boolean,    // Generate base64 output
+  willGenerateBlob?: boolean       // Generate blob output
+}
+```
+
+#### Image-Specific Rules
+```typescript
+{
+  processedCompressQuality?: number,  // 0-100
+  processedFormat?: 'jpeg' | 'png' | 'webp',
+  thumbnailCompressQuality?: number,   // 0-100
+  thumbnailFormat?: 'jpeg' | 'png' | 'webp'
+}
+```
+
+#### Video-Specific Rules
+```typescript
+{
+  startAt?: number,                    // Thumbnail timestamp (seconds)
+  duration?: number,                   // Clip duration (seconds)
+  processedCompressQuality?: number,   // 0-100
+  processedFormat?: 'mp4' | 'webm' | 'avi'
+}
+```
+
+#### Audio-Specific Rules
+```typescript
+{
+  startAt?: number,                    // Preview start (seconds)
+  duration?: number,                   // Preview duration (seconds)
+  processedFormat?: 'wav' | 'mp3' | 'ogg' | 'opus'
+}
+```
+
+## 🌍 Browser Support
+
+- Chrome/Edge 90+
+- Firefox 88+
+- Safari 14+
+- Opera 76+
+
+## 📝 License
+
+MIT © [Your Name]
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 🐛 Bug Reports
+
+Found a bug? Please [open an issue](https://github.com/yourusername/nextjs-media-helper/issues) with:
+- Description of the bug
+- Steps to reproduce
+- Expected behavior
+- Screenshots (if applicable)
+- Browser and version
+
+## 💖 Support
+
+If you find this library helpful, please consider:
+- ⭐ Starring the repository
+- 🐦 Sharing on Twitter
+- 📝 Writing a blog post
+- ☕ [Buying me a coffee](https://buymeacoffee.com/yourusername)
+
+## 🔗 Links
+
+- [NPM Package](https://www.npmjs.com/package/nextjs-media-helper)
+- [GitHub Repository](https://github.com/yourusername/nextjs-media-helper)
+- [Documentation](https://github.com/yourusername/nextjs-media-helper#readme)
+- [Changelog](https://github.com/yourusername/nextjs-media-helper/blob/main/CHANGELOG.md)
+
+---
+
+Made with ❤️ by [Your Name](https://github.com/yourusername)
