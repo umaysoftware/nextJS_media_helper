@@ -1,4 +1,7 @@
-
+import { AudioRuleInfo } from './audio';
+import { DocumentRuleInfo } from './document';
+import { ImageRuleInfo } from './image';
+import { VideoRuleInfo } from './video';
 /**
  * Seçilen medya dosyasının temel bilgilerini içeren interface
  * Bu interface, dosya seçildikten sonra ilk validasyon için kullanılır
@@ -111,7 +114,7 @@ export interface FileError {
 export type ProgressCallback = (progress: ProgressInfo) => void;
 
 export interface SelectionOptions {
-    rules?: RuleInfo[]; // Tek bir kural veya kural dizisi
+    rules?: (RuleInfo | AudioRuleInfo | DocumentRuleInfo | ImageRuleInfo | VideoRuleInfo)[]; // Seçim kuralları
     onProgress?: ProgressCallback; // İlerleme callback'i
 }
 
