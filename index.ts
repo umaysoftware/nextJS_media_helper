@@ -111,7 +111,7 @@ export class MediaHelper {
      */
     private static async processFile(
         file: File, 
-        rules?: RuleInfo,
+        rules?: RuleInfo | AudioRuleInfo | DocumentRuleInfo | ImageRuleInfo | VideoRuleInfo | ArchiveRuleInfo,
         onProgress?: (progress: any) => void,
         currentIndex?: number,
         totalFiles?: number
@@ -129,7 +129,7 @@ export class MediaHelper {
         };
 
         // Validate file
-        const validationError = this.validateFile(file, rules);
+        const validationError = this.validateFile(file, rules as RuleInfo);
         if (validationError) {
             return {
                 processType: 'unprocessed',
@@ -172,6 +172,32 @@ export class MediaHelper {
     }
 
     /**
+     * Find the appropriate rule for a file based on its type
+     */
+    private static findRuleForFile(
+        file: File, 
+        rules?: (RuleInfo | AudioRuleInfo | DocumentRuleInfo | ImageRuleInfo | VideoRuleInfo | ArchiveRuleInfo)[]
+    ): RuleInfo | AudioRuleInfo | DocumentRuleInfo | ImageRuleInfo | VideoRuleInfo | ArchiveRuleInfo | undefined {
+        if (!rules || rules.length === 0) return undefined;
+        
+        // Find a rule that matches this file's type
+        for (const rule of rules) {
+            // Check if rule's allowedMimeTypes match this file
+            if (rule.allowedMimeTypes) {
+                if (this.matchesMimeType(file.type, rule.allowedMimeTypes)) {
+                    return rule;
+                }
+            } else {
+                // If no specific mime types, use the first rule as default
+                return rule;
+            }
+        }
+        
+        // If no specific rule found, return first rule as fallback
+        return rules[0];
+    }
+
+    /**
      * Process files and return array of ProcessedFile and UnProcessedFile
      */
     static async processFiles(
@@ -182,11 +208,11 @@ export class MediaHelper {
             return [];
         }
 
-        const rules = options?.rules?.[0]; // For now, use first rule for all files
         const results: (ProcessedFile | UnProcessedFile)[] = [];
 
-        // Check selection count constraints
-        if (rules?.minSelectionCount && files.length < rules.minSelectionCount) {
+        // Check selection count constraints using first rule if available
+        const firstRule = options?.rules?.[0];
+        if (firstRule?.minSelectionCount && files.length < firstRule.minSelectionCount) {
             // Return all files as unprocessed with error
             return files.map(file => {
                 const extension = '.' + file.name.split('.').pop()!.toLowerCase();
@@ -205,22 +231,23 @@ export class MediaHelper {
                     reason: {
                         fileName: file.name,
                         errorCode: 'too-few-files',
-                        message: `Minimum ${rules.minSelectionCount} file(s) required`
+                        message: `Minimum ${firstRule.minSelectionCount} file(s) required`
                     }
                 };
             });
         }
 
-        if (rules?.maxSelectionCount && files.length > rules.maxSelectionCount) {
+        if (firstRule?.maxSelectionCount && files.length > firstRule.maxSelectionCount) {
             // Process only up to max count
-            files = files.slice(0, rules.maxSelectionCount);
+            files = files.slice(0, firstRule.maxSelectionCount);
         }
 
-        // Process each file
+        // Process each file with appropriate rule
         for (let i = 0; i < files.length; i++) {
+            const rule = this.findRuleForFile(files[i], options?.rules);
             const result = await this.processFile(
                 files[i], 
-                rules, 
+                rule, 
                 options?.onProgress,
                 i,
                 files.length
@@ -240,9 +267,18 @@ export class MediaHelper {
             input.type = 'file';
             input.multiple = true;
             
-            // Set accept attribute based on rules
-            if (options?.rules?.[0]?.allowedMimeTypes) {
-                input.accept = options.rules[0].allowedMimeTypes.join(',');
+            // Collect all allowed mime types from all rules
+            if (options?.rules && options.rules.length > 0) {
+                const allMimeTypes: string[] = [];
+                for (const rule of options.rules) {
+                    if (rule.allowedMimeTypes) {
+                        allMimeTypes.push(...rule.allowedMimeTypes);
+                    }
+                }
+                if (allMimeTypes.length > 0) {
+                    // Remove duplicates and set accept attribute
+                    input.accept = Array.from(new Set(allMimeTypes)).join(',');
+                }
             }
 
             input.onchange = async (e) => {
