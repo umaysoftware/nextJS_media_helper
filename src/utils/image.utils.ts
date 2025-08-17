@@ -15,7 +15,7 @@ async function generateImageThumbnail(
 
         img.onload = () => {
             // Set thumbnail size (max 200px)
-            const maxSize = 600;
+            const maxSize = 800;
             let width = img.width;
             let height = img.height;
 

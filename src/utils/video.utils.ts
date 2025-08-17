@@ -27,7 +27,7 @@ async function generateVideoThumbnail(
             ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
 
             // Scale down for thumbnail
-            const maxSize = 600;
+            const maxSize = 800;
             let width = canvas.width;
             let height = canvas.height;
 
