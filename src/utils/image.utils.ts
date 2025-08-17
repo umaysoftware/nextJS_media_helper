@@ -12,13 +12,13 @@ async function generateImageThumbnail(
         const img = new Image();
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
-        
+
         img.onload = () => {
             // Set thumbnail size (max 200px)
-            const maxSize = 200;
+            const maxSize = 600;
             let width = img.width;
             let height = img.height;
-            
+
             if (width > height) {
                 if (width > maxSize) {
                     height = (height * maxSize) / width;
@@ -30,21 +30,21 @@ async function generateImageThumbnail(
                     height = maxSize;
                 }
             }
-            
+
             canvas.width = width;
             canvas.height = height;
             ctx?.drawImage(img, 0, 0, width, height);
-            
+
             // Convert to specified format
             const format = rules?.thumbnailFormat || 'webp';
             const quality = (rules?.thumbnailCompressQuality || 75) / 100;
-            
+
             canvas.toBlob((blob) => {
                 if (blob) {
                     const thumbFile = new File([blob], `thumb_${file.name}`, {
                         type: `image/${format}`
                     });
-                    
+
                     resolve({
                         name: thumbFile.name,
                         size: blob.size,
@@ -57,7 +57,7 @@ async function generateImageThumbnail(
                 }
             }, `image/${format}`, quality);
         };
-        
+
         img.src = URL.createObjectURL(file);
     });
 }
@@ -73,15 +73,15 @@ async function compressImage(
         const img = new Image();
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
-        
+
         img.onload = () => {
             canvas.width = img.width;
             canvas.height = img.height;
             ctx?.drawImage(img, 0, 0);
-            
+
             const format = rules?.processedFormat || 'webp';
             const quality = (rules?.processedCompressQuality || 80) / 100;
-            
+
             canvas.toBlob((blob) => {
                 if (blob) {
                     const compressedFile = new File([blob], file.name, {
@@ -93,7 +93,7 @@ async function compressImage(
                 }
             }, `image/${format}`, quality);
         };
-        
+
         img.src = URL.createObjectURL(file);
     });
 }
@@ -179,7 +179,7 @@ export async function processImageFile(
                 percentage: Math.round(((currentIndex + 0.8) / totalFiles) * 100)
             });
         }
-        
+
         const thumbnail = await generateImageThumbnail(file, rules);
 
         // Progress: completed

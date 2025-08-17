@@ -12,25 +12,25 @@ async function generateVideoThumbnail(
         const video = document.createElement('video');
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
-        
+
         video.onloadedmetadata = () => {
             // Seek to specific time or 1 second
             video.currentTime = rules?.startAt || 1;
         };
-        
+
         video.onseeked = () => {
             // Set canvas size
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
-            
+
             // Draw frame
             ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
+
             // Scale down for thumbnail
-            const maxSize = 400;
+            const maxSize = 600;
             let width = canvas.width;
             let height = canvas.height;
-            
+
             if (width > height) {
                 if (width > maxSize) {
                     height = (height * maxSize) / width;
@@ -42,20 +42,20 @@ async function generateVideoThumbnail(
                     height = maxSize;
                 }
             }
-            
+
             const thumbCanvas = document.createElement('canvas');
             const thumbCtx = thumbCanvas.getContext('2d');
             thumbCanvas.width = width;
             thumbCanvas.height = height;
             thumbCtx?.drawImage(canvas, 0, 0, width, height);
-            
+
             // Convert to image
             thumbCanvas.toBlob((blob) => {
                 if (blob) {
                     const thumbFile = new File([blob], `thumb_${file.name}.jpg`, {
                         type: 'image/jpeg'
                     });
-                    
+
                     resolve({
                         name: thumbFile.name,
                         size: blob.size,
@@ -68,16 +68,16 @@ async function generateVideoThumbnail(
                 } else {
                     reject(new Error('Failed to generate thumbnail'));
                 }
-                
+
                 // Clean up
                 URL.revokeObjectURL(video.src);
             }, 'image/jpeg', 0.8);
         };
-        
+
         video.onerror = () => {
             reject(new Error('Failed to load video'));
         };
-        
+
         video.src = URL.createObjectURL(file);
         video.load();
     });
@@ -106,25 +106,25 @@ async function compressVideo(
         const video = document.createElement('video');
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
-        
+
         video.onloadedmetadata = () => {
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
-            
+
             const stream = canvas.captureStream(30);
             const mediaRecorder = new MediaRecorder(stream, {
                 mimeType: 'video/webm;codecs=vp9',
                 videoBitsPerSecond: 2500000 // 2.5 Mbps
             });
-            
+
             const chunks: Blob[] = [];
-            
+
             mediaRecorder.ondataavailable = (e) => {
                 if (e.data.size > 0) {
                     chunks.push(e.data);
                 }
             };
-            
+
             mediaRecorder.onstop = () => {
                 const blob = new Blob(chunks, { type: 'video/webm' });
                 const compressedFile = new File([blob], file.name.replace(/\.[^.]+$/, '.webm'), {
@@ -132,11 +132,11 @@ async function compressVideo(
                 });
                 resolve(compressedFile);
             };
-            
+
             // Start recording
             mediaRecorder.start();
             video.play();
-            
+
             // Draw frames to canvas
             const drawFrame = () => {
                 if (!video.paused && !video.ended) {
@@ -148,11 +148,11 @@ async function compressVideo(
             };
             drawFrame();
         };
-        
+
         video.onerror = () => {
             reject(new Error('Failed to load video for compression'));
         };
-        
+
         video.src = URL.createObjectURL(file);
         video.load();
     });
